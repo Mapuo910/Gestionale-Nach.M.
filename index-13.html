@@ -1,0 +1,3739 @@
+<!DOCTYPE html>
+<html lang="it"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestione Cantiere</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#16232E">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cantiere">
+
+<style>
+/* Font locali per funzionamento 100% offline (vedi istruzioni per scaricare i file in fonts/).
+   Se i file non sono presenti, il browser usa automaticamente i font di sistema di fallback
+   già indicati in ogni font-family qui sotto: nessun errore, nessuna interruzione. */
+@font-face{font-family:'Oswald';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/oswald-400.woff2') format('woff2');}
+@font-face{font-family:'Oswald';font-style:normal;font-weight:500;font-display:swap;src:url('fonts/oswald-500.woff2') format('woff2');}
+@font-face{font-family:'Oswald';font-style:normal;font-weight:600;font-display:swap;src:url('fonts/oswald-600.woff2') format('woff2');}
+@font-face{font-family:'Oswald';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/oswald-700.woff2') format('woff2');}
+@font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/inter-400.woff2') format('woff2');}
+@font-face{font-family:'Inter';font-style:normal;font-weight:500;font-display:swap;src:url('fonts/inter-500.woff2') format('woff2');}
+@font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:swap;src:url('fonts/inter-600.woff2') format('woff2');}
+@font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/ibmplexmono-400.woff2') format('woff2');}
+@font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:500;font-display:swap;src:url('fonts/ibmplexmono-500.woff2') format('woff2');}
+@font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:600;font-display:swap;src:url('fonts/ibmplexmono-600.woff2') format('woff2');}
+
+:root{
+  --paper:#EDF1F2;
+  --paper-line: rgba(44,110,158,0.08);
+  --ink:#16232E;
+  --muted:#5B6B75;
+  --line:#B7C4CC;
+  --surface:#FFFFFF;
+  --orange:#E8720C;
+  --orange-dim:#F6DCC3;
+  --yellow:#F2B705;
+  --green:#2F8F5B;
+  --green-dim:#DCEFE4;
+  --red:#C4423C;
+  --red-dim:#F6DCDA;
+  --blue:#2C6E9E;
+  --blue-dim:#D9E6EF;
+  --purple:#6E5AA8;
+  --purple-dim:#E4DEF2;
+  --radius:2px;
+}
+*{box-sizing:border-box;}
+html{overscroll-behavior-y: contain;}
+body{
+  margin:0;
+  background-color:var(--paper);
+  background-image:
+    repeating-linear-gradient(0deg, var(--paper-line) 0px, var(--paper-line) 1px, transparent 1px, transparent 32px),
+    repeating-linear-gradient(90deg, var(--paper-line) 0px, var(--paper-line) 1px, transparent 1px, transparent 32px);
+  font-family:'Inter', sans-serif;
+  color:var(--ink);
+  min-height:100vh;
+  overscroll-behavior-y: contain;
+}
+h1,h2,h3,.display{font-family:'Oswald', sans-serif; text-transform:uppercase; letter-spacing:0.03em;}
+.mono{font-family:'IBM Plex Mono', monospace;}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 20px 60px;}
+
+/* --- Title block (cartiglio) --- */
+.stamp{
+  background:var(--surface);
+  border:1.5px solid var(--ink);
+  display:flex;
+  flex-wrap:wrap;
+}
+.stamp-cell{
+  padding:10px 16px;
+  border-right:1px solid var(--line);
+  flex:1;
+  min-width:140px;
+}
+.stamp-cell:last-child{border-right:none;}
+.stamp-label{font-size:10px;letter-spacing:0.12em;color:var(--muted);font-family:'IBM Plex Mono',monospace;display:block;margin-bottom:3px;}
+.stamp-value{font-family:'Oswald',sans-serif;font-size:18px;font-weight:600;letter-spacing:0.02em;}
+.stamp-value.small{font-size:14px;font-family:'IBM Plex Mono',monospace;font-weight:500;text-transform:none;letter-spacing:0;}
+
+/* --- Nav as title-block tabs --- */
+.nav{
+  display:flex;
+  border:1.5px solid var(--ink);
+  border-top:none;
+  background:var(--surface);
+  overflow-x:auto;
+}
+.nav-tab{
+  flex:1;
+  min-width:130px;
+  text-align:left;
+  padding:14px 18px;
+  border-right:1px solid var(--line);
+  background:transparent;
+  cursor:pointer;
+  font-family:'Oswald',sans-serif;
+  letter-spacing:0.04em;
+  color:var(--muted);
+  font-size:14px;
+  position:relative;
+  transition:background .15s ease, color .15s ease;
+}
+.nav-tab:last-child{border-right:none;}
+.nav-tab .code{font-family:'IBM Plex Mono',monospace;font-size:10px;display:block;color:var(--muted);margin-bottom:2px;}
+.nav-tab:hover{background:var(--orange-dim);color:var(--ink);}
+.nav-tab.active{color:var(--ink);background:var(--surface);}
+.nav-tab.active::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:3px;background:var(--orange);}
+
+.panel{
+  border:1.5px solid var(--ink);
+  border-top:none;
+  background:var(--surface);
+  padding:18px 18px;
+  min-height:300px;
+}
+.section-title{font-size:22px;margin:0 0 4px;}
+.section-sub{color:var(--muted);font-size:13px;line-height:1.4;margin:0 0 14px;}
+
+/* --- Dashboard cards --- */
+.grid-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:16px;}
+.card{
+  border:1px solid var(--line);
+  border-left:4px solid var(--line);
+  padding:11px 14px;
+  cursor:pointer;
+  transition:border-color .15s ease, transform .1s ease, box-shadow .15s ease;
+  background:var(--surface);
+}
+.card:hover{border-color:var(--orange);transform:translateY(-2px);box-shadow:0 4px 14px rgba(22,35,46,0.08);}
+.card.status-ok{border-left-color:var(--green);}
+.card.status-warn{border-left-color:var(--red);}
+.card.status-info{border-left-color:var(--blue);}
+.card-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:0.09em;margin-bottom:4px;}
+.card-num{font-family:'Oswald',sans-serif;font-size:26px;font-weight:600;line-height:1;}
+.card-label{font-size:12px;color:var(--muted);margin-top:3px;}
+.card-flag{display:inline-block;margin-top:5px;font-size:11px;font-weight:500;padding:2px 8px;border-radius:var(--radius);font-family:'IBM Plex Mono',monospace;}
+.flag-red{background:var(--red-dim);color:var(--red);}
+.flag-green{background:var(--green-dim);color:var(--green);}
+.flag-orange{background:var(--orange-dim);color:var(--orange);}
+.flag-blue{background:var(--blue-dim);color:var(--blue);}
+
+.subsection-title{font-size:13px;font-family:'Oswald',sans-serif;letter-spacing:0.05em;margin:16px 0 8px;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:4px;}
+
+/* --- Buttons --- */
+.btn{
+  font-family:'Oswald',sans-serif;
+  letter-spacing:0.03em;
+  font-size:14px;
+  padding:11px 20px;
+  border:1.5px solid var(--ink);
+  background:var(--ink);
+  color:var(--surface);
+  cursor:pointer;
+  transition:background .15s ease;
+}
+.btn:hover{background:var(--orange);border-color:var(--orange);}
+.btn.ghost{background:transparent;color:var(--ink);}
+.btn.ghost:hover{background:var(--orange-dim);border-color:var(--orange);color:var(--ink);}
+.btn.small{padding:7px 12px;font-size:12px;}
+.toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:10px;flex-wrap:wrap;}
+
+/* --- Tables --- */
+.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:640px;}
+.tabella-compatta{width:auto !important;min-width:0 !important;}
+th{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:0.05em;color:var(--muted);border-bottom:1.5px solid var(--ink);padding:10px 12px;text-transform:uppercase;white-space:nowrap;}
+td{padding:13px 12px;border-bottom:1px solid var(--line);vertical-align:middle;}
+tr:nth-child(even) td{background:rgba(44,110,158,0.025);}
+tr:hover td{background:rgba(232,114,12,0.06);}
+.empty-row td{color:var(--muted);text-align:center;padding:30px;font-style:italic;}
+
+/* --- Progress bar --- */
+.bar-track{background:var(--paper);border:1px solid var(--line);height:10px;width:100%;position:relative;}
+.bar-fill{background:var(--orange);height:100%;}
+.bar-marker{position:absolute;top:-3px;width:2px;height:16px;background:var(--ink);}
+
+.badge{display:inline-block;font-size:12px;font-weight:500;padding:3px 10px;font-family:'IBM Plex Mono',monospace;border-radius:var(--radius);white-space:nowrap;}
+.badge-green{background:var(--green-dim);color:var(--green);}
+.badge-red{background:var(--red-dim);color:var(--red);}
+.badge-orange{background:var(--orange-dim);color:var(--orange);}
+.badge-blue{background:var(--blue-dim);color:var(--blue);}
+.badge-gray{background:#E7EAEC;color:var(--muted);}
+.badge-purple{background:var(--purple-dim);color:var(--purple);}
+
+.row-actions{display:flex;gap:6px;}
+.icon-btn{background:none;border:1px solid var(--line);cursor:pointer;padding:9px 12px;font-size:12px;color:var(--muted);min-height:38px;}
+.valore-cliccabile{cursor:pointer;border-bottom:1px dotted var(--muted);display:inline-block;padding:5px 2px;}
+.valore-cliccabile:hover{border-bottom-color:var(--orange);color:var(--orange);}
+.valore-vuoto{cursor:pointer;color:var(--muted);font-style:italic;font-size:11px;border-bottom:1px dotted var(--line);padding:5px 2px;display:inline-block;}
+.valore-vuoto:hover{border-bottom-color:var(--orange);color:var(--orange);}
+.riga-cliccabile{cursor:pointer;}
+.riga-cliccabile:hover td{background:rgba(232,114,12,0.07);}
+.stepper{display:inline-flex;align-items:center;gap:4px;}
+.stepper button{width:38px;height:38px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-size:17px;line-height:1;padding:0;color:var(--ink);}
+.stepper button:hover{border-color:var(--orange);color:var(--orange);}
+.icon-btn:hover{border-color:var(--orange);color:var(--orange);}
+
+/* --- Calendar --- */
+.cal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.cal-month{font-family:'Oswald',sans-serif;font-size:20px;}
+.cal-grid-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(92px,1fr));min-width:650px;border-left:1px solid var(--line);border-top:1px solid var(--line);}
+.cal-dow{font-family:'IBM Plex Mono',monospace;font-size:10px;text-align:center;padding:6px;color:var(--muted);border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--paper);}
+.cal-day{min-height:128px;min-width:0;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:8px;cursor:pointer;position:relative;transition:background .1s ease;overflow:hidden;}
+.cal-day:hover{background:var(--orange-dim);}
+.cal-day.other-month{opacity:0.35;}
+.cal-day.today{background:#FFF7EC;}
+.cal-day.selected{outline:2px solid var(--orange);outline-offset:-2px;}
+.cal-daynum{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--muted);}
+.cal-entries{display:flex;flex-direction:column;gap:3px;margin-top:6px;min-width:0;}
+.cal-entry-line{font-size:11px;line-height:1.35;padding:2px 5px 2px 7px;border-left:3px solid var(--muted);background:rgba(22,35,46,0.035);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink);min-width:0;max-width:100%;}
+.cal-dots-mini{display:none;flex-wrap:wrap;gap:3px;margin-top:6px;}
+.cal-dots{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px;}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.dot-ordine{background:var(--blue);}
+.dot-lavorazione{background:var(--orange);}
+.dot-positivo{background:var(--green);}
+.dot-negativo{background:var(--red);}
+.dot-neutro{background:var(--muted);}
+.dot-nota{background:#7C8891;}
+.dot-appuntamento{background:var(--purple);}
+.cal-more{font-size:9px;color:var(--muted);font-family:'IBM Plex Mono',monospace;}
+.day-detail{border:1px solid var(--line);margin-top:16px;padding:16px;background:var(--paper);}
+.day-detail h4{margin:0 0 10px;font-size:14px;}
+.day-entry{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--surface);border:1px solid var(--line);margin-bottom:6px;font-size:13px;}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:14px;font-size:12px;color:var(--muted);align-items:center;}
+.legend span{display:flex;align-items:center;gap:5px;}
+
+/* --- Modal --- */
+.overlay{position:fixed;inset:0;background:rgba(22,35,46,0.55);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:40px 16px;overflow-y:auto;}
+.overlay.open{display:flex;}
+.modal{background:var(--surface);border:1.5px solid var(--ink);width:100%;max-width:480px;padding:22px;}
+.modal h3{margin:0 0 16px;font-size:18px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:11.5px;font-family:'IBM Plex Mono',monospace;color:var(--muted);letter-spacing:0.04em;margin-bottom:6px;text-transform:uppercase;}
+.field input, .field select, .field textarea{
+  width:100%;padding:10px 11px;border:1px solid var(--line);background:var(--paper);font-family:'Inter',sans-serif;font-size:14px;color:var(--ink);
+}
+.field textarea{resize:vertical;min-height:60px;}
+.field-check{display:flex;align-items:center;gap:8px;}
+.field-check input{width:auto;}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
+.field-row{display:flex;gap:10px;}
+.field-row .field{flex:1;}
+
+.empty-state{text-align:center;padding:50px 20px;color:var(--muted);}
+.empty-state .display{font-size:16px;color:var(--ink);margin-bottom:8px;}
+
+@media (max-width:720px){
+  .stamp{flex-direction:column;}
+  .stamp-cell{border-right:none;border-bottom:1px solid var(--line);}
+  .nav{flex-direction:column;}
+  .nav-tab{border-right:none;border-bottom:1px solid var(--line);}
+  .panel{padding:16px 12px;}
+}
+@media (max-width:600px){
+  .cal-grid-scroll{overflow-x:visible;}
+  .cal-grid{min-width:0;grid-template-columns:repeat(7,minmax(0,1fr));}
+  .cal-day{min-height:52px;padding:4px 3px;}
+  .cal-daynum{font-size:10.5px;}
+  .cal-entries{display:none;}
+  .cal-dots-mini{display:flex;}
+  .cal-dots-mini .dot{width:6px;height:6px;}
+  .cal-more{font-size:8px;}
+  .cal-dow{font-size:9px;padding:4px 2px;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="stamp">
+    <div class="stamp-cell" style="flex:2;min-width:220px;">
+      <span class="stamp-label">Cantiere attivo</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="stamp-value" id="stamp-nome-cantiere">--</span>
+        <button class="icon-btn" id="btn-rinomina-cantiere" title="Rinomina cantiere">✎</button>
+      </div>
+    </div>
+    <div class="stamp-cell" style="min-width:170px;">
+      <span class="stamp-label">&nbsp;</span>
+      <button class="btn ghost small" id="btn-cambia-cantiere" style="width:100%;">⇄ Cambia / Nuovo cantiere</button>
+    </div>
+    <div class="stamp-cell">
+      <span class="stamp-label">Data odierna</span>
+      <span class="stamp-value small" id="stamp-date">--</span>
+    </div>
+    <div class="stamp-cell">
+      <span class="stamp-label">Sincronizzazione</span>
+      <span class="badge badge-gray" id="stato-sync">● In attesa</span>
+    </div>
+  </div>
+
+  <div class="nav" id="nav"></div>
+  <div class="panel" id="content"></div>
+
+  <div class="legend" style="margin-top:14px;">
+    <span><span class="dot dot-ordine"></span> Ordine</span>
+    <span><span class="dot dot-lavorazione"></span> Scadenza lavorazione</span>
+    <span><span class="dot dot-positivo"></span> Evento positivo</span>
+    <span><span class="dot dot-negativo"></span> Evento negativo</span>
+    <span><span class="dot dot-neutro"></span> Evento neutro</span>
+    <span><span class="dot dot-nota"></span> Nota</span>
+    <span><span class="dot dot-appuntamento"></span> Appuntamento</span>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal"></div>
+</div>
+<div id="overlay-caricamento" style="display:none;position:fixed;inset:0;background:rgba(237,241,242,0.75);z-index:100;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border:1.5px solid var(--ink);padding:16px 22px;font-family:'Oswald',sans-serif;letter-spacing:0.04em;">Sincronizzazione con Google Sheets…</div>
+</div>
+<div id="toast-salvataggio" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:var(--surface);padding:10px 20px;font-family:'Oswald',sans-serif;letter-spacing:0.05em;font-size:14px;z-index:120;opacity:0;transition:opacity .25s ease, transform .25s ease;pointer-events:none;border-radius:2px;">Salvato ✓</div>
+<div id="indicatore-foto" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:var(--orange);color:var(--surface);padding:8px 16px;font-family:'Oswald',sans-serif;letter-spacing:0.04em;font-size:13px;z-index:120;border-radius:2px;box-shadow:0 2px 8px rgba(0,0,0,0.25);"></div>
+
+<script>
+/* ============ SEGNALAZIONE ERRORI VISIBILE ============
+   Se qualcosa nello script va storto, mostra un avviso a schermo invece di
+   fallire in silenzio (utile per capire cosa succede senza dover collegare
+   il telefono a un computer per vedere la console). */
+window.addEventListener('error', function(e){
+  try{
+    var el = document.createElement('div');
+    el.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#fff3f3;color:#a00;padding:10px 14px;font-size:12px;font-family:monospace;border-top:2px solid #a00;z-index:99999;max-height:40vh;overflow:auto;white-space:pre-wrap;';
+    el.textContent = 'Errore JavaScript: ' + (e.message || '') + '\n' + (e.filename ? (e.filename + ':' + e.lineno) : '');
+    document.body.appendChild(el);
+  }catch(e2){}
+});
+window.addEventListener('unhandledrejection', function(e){
+  try{
+    var el = document.createElement('div');
+    el.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#fff3f3;color:#a00;padding:10px 14px;font-size:12px;font-family:monospace;border-top:2px solid #a00;z-index:99999;max-height:40vh;overflow:auto;white-space:pre-wrap;';
+    el.textContent = 'Errore (promise): ' + (e.reason && e.reason.message ? e.reason.message : String(e.reason));
+    document.body.appendChild(el);
+  }catch(e2){}
+});
+
+/* ============ CONTROLLO VERSIONE (evita che il browser mostri una copia vecchia in cache) ============ */
+const APP_VERSION = 'v2026-07-26-8';
+(function(){
+  try{
+    // Passo 1: confronto rapido con l'ultima versione vista su questo dispositivo (istantaneo, nessuna rete)
+    const versionePrecedente = localStorage.getItem('gc_app_version');
+    if(versionePrecedente !== APP_VERSION){
+      localStorage.setItem('gc_app_version', APP_VERSION);
+    }
+  }catch(e){}
+
+  // Passo 2: controllo attivo in sottofondo — scarica la pagina reale da GitHub Pages
+  // ignorando volutamente la cache del browser, e si auto-ricarica se trova una versione diversa.
+  // Questo funziona anche se la pagina attualmente in esecuzione è vecchia, perché il controllo
+  // stesso forza una richiesta di rete fresca invece di fidarsi di quello che è già in memoria.
+  //
+  // Limite di sicurezza: durante la propagazione di un aggiornamento su GitHub Pages, server
+  // diversi possono rispondere temporaneamente con versioni diverse tra loro. Senza un limite,
+  // questo potrebbe causare ricaricamenti ripetuti in sequenza (sembrando un blocco/crash).
+  // Per questo ci si ricarica al massimo una volta ogni 20 secondi.
+  try{
+    const ultimoTentativo = Number(sessionStorage.getItem('gc_ultimo_reload_versione') || 0);
+    const adesso = Date.now();
+    if(adesso - ultimoTentativo > 20000){
+      fetch(window.location.pathname, {cache:'no-store'})
+        .then(risposta => risposta.text())
+        .then(testo => {
+          const m = testo.match(/APP_VERSION\s*=\s*'([^']+)'/);
+          if(m && m[1] && m[1] !== APP_VERSION){
+            sessionStorage.setItem('gc_ultimo_reload_versione', String(Date.now()));
+            const url = new URL(window.location.href);
+            url.searchParams.set('_v', Date.now());
+            window.location.replace(url.toString());
+          }
+        })
+        .catch(() => {}); // offline o rete non disponibile: si continua con la versione già in uso
+    }
+  }catch(e){}
+})();
+
+/* ============ STATE ============ */
+/* Ricorda quali tendine <details> sono aperte tra un ridisegno e l'altro della pagina */
+const uiDettagliAperti = {};
+
+/* Ricorda la posizione di scorrimento orizzontale delle tabelle tra un ridisegno e l'altro */
+function catturaScrollOrizzontale(){
+  return Array.from(document.querySelectorAll('#content .table-scroll')).map(el => el.scrollLeft);
+}
+function ripristinaScrollOrizzontale(valori){
+  const elementi = document.querySelectorAll('#content .table-scroll');
+  elementi.forEach((el, i) => { if(valori[i] !== undefined) el.scrollLeft = valori[i]; });
+}
+
+/* Ricorda la posizione di scorrimento VERTICALE della pagina quando fai una modifica rapida
+   (modificare un valore, spuntare una casella, salvare un modulo, ecc.), così dopo il
+   ridisegno della schermata resti dove eri invece di tornare in cima alla pagina.
+   Quando invece cambi sezione dal menu (o dalle card del Quadro generale), la posizione
+   non viene forzata: è giusto che una nuova schermata parta dall'alto.
+   Importante: mentre un modulo/finestra è aperto NON si ricattura più la posizione, perché
+   su mobile l'apertura della tastiera può far scorrere la pagina da sola — se continuassimo
+   a catturare ad ogni tocco/tasto, finiremmo per "fissare" proprio quella posizione sbagliata
+   invece di quella originale, prima di aprire il modulo. */
+let scrollVerticaleDaRipristinare = null;
+['click','submit','change','keydown'].forEach(evento => {
+  document.addEventListener(evento, (e) => {
+    const overlayEl = document.getElementById('overlay');
+    if(overlayEl && overlayEl.classList.contains('open')) return;
+    const cambioSezione = e.target && e.target.closest && (e.target.closest('.nav-tab') || e.target.closest('[data-goto]'));
+    scrollVerticaleDaRipristinare = cambioSezione ? null : window.scrollY;
+  }, true);
+});
+function avviaOsservatoreScrollVerticale(){
+  const contenitore = document.getElementById('content');
+  if(!contenitore) return;
+  const osservatore = new MutationObserver(() => {
+    if(scrollVerticaleDaRipristinare !== null){
+      const y = scrollVerticaleDaRipristinare;
+      scrollVerticaleDaRipristinare = null;
+      requestAnimationFrame(() => window.scrollTo(0, y));
+    }
+  });
+  osservatore.observe(contenitore, {childList:true});
+}
+avviaOsservatoreScrollVerticale();
+
+const state = {
+  cantiereAttivoId: null,
+  section: 'dashboard',
+  lavorazioni: [],
+  ordini: [],
+  persone: [],
+  eventi: [],
+  calendario: [],
+  attivitaVarie: [],
+  diario: [],
+  diarioRicerca: '',
+  materialiDaOrdinare: [],
+  materialiFiltroFornitore: '',
+  lavorazioniFiltroCategoria: '',
+  snapshotSettimanale: null,
+  snapshotMensile: null,
+  rischi: [],
+  rischiFiltroStato: '',
+  rischiFiltroCategoria: '',
+  contrattiSal: [],
+  attivitaOre: [],
+  nomeCantiereAttivo: '',
+  calMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+  selectedDay: null,
+  personeMese: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+};
+
+const MESI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+
+const SECTIONS = [
+  {id:'dashboard', code:'00', label:'Quadro generale'},
+  {id:'calendario', code:'01', label:'Calendario'},
+  {id:'lavorazioni', code:'02', label:'Lavorazioni'},
+  {id:'ordini', code:'03', label:'Ordini'},
+  {id:'persone', code:'04', label:'Persone'},
+  {id:'eventi', code:'05', label:'Eventi'},
+  {id:'diario', code:'06', label:'Diario di cantiere'},
+  {id:'rischi', code:'07', label:'Rischi'},
+  {id:'sal', code:'08', label:'SAL Fornitori'},
+];
+
+/* ============ STORAGE (localStorage — persistente sul dispositivo, ideale per APK/WebView) ============ */
+const LS_PREFIX = 'gc_'; // gestione-cantiere
+const LS_KEY_LISTA = LS_PREFIX + 'lista-cantieri';
+const LS_KEY_ATTIVO = LS_PREFIX + 'cantiere-attivo';
+const LS_KEY_URL_SHEETS = LS_PREFIX + 'url-apps-script';
+
+function lsGet(key, fallback){
+  try{
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  }catch(e){
+    console.error('Errore lettura storage locale', key, e);
+    return fallback;
+  }
+}
+function lsSet(key, value){
+  try{
+    localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  }catch(e){
+    console.error('Errore salvataggio storage locale', key, e);
+    return false;
+  }
+}
+function datiVuoti(){
+  return {lavorazioni:[], ordini:[], persone:[], eventi:[], calendario:[], attivitaVarie:[], diario:[], materialiDaOrdinare:[], snapshotSettimanale:null, snapshotMensile:null, rischi:[], contrattiSal:[], attivitaOre:[]};
+}
+function dataKeyCantiere(id){ return LS_PREFIX + 'dati-' + id; }
+
+/* ---- Collegamento al foglio Google (Apps Script Web App) ---- */
+const URL_APPS_SCRIPT_PREDEFINITO = 'https://script.google.com/macros/s/AKfycbxDXtrI8NELVMnHIW3MJoS2yhahFm0DLQT4FOI9pcx3-w9is2HwV0WUg2tMKaUuq-rC/exec'; function getUrlAppsScript(){ return localStorage.getItem(LS_KEY_URL_SHEETS) || URL_APPS_SCRIPT_PREDEFINITO; }
+function setUrlAppsScript(url){ localStorage.setItem(LS_KEY_URL_SHEETS, url.trim()); }
+
+async function kvGet(key){
+  const url = getUrlAppsScript();
+  if(!url) throw new Error('Nessun Google Sheet configurato su questo dispositivo.');
+  const res = await fetch(`${url}?action=get&key=${encodeURIComponent(key)}`);
+  if(!res.ok) throw new Error('Errore di rete (HTTP ' + res.status + ')');
+  const json = await res.json();
+  if(!json.ok) throw new Error(json.error || 'Errore nella lettura dei dati dal foglio');
+  return json.found ? JSON.parse(json.value) : null;
+}
+async function kvSet(key, value){
+  const url = getUrlAppsScript();
+  if(!url) throw new Error('Nessun Google Sheet configurato su questo dispositivo.');
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type': 'text/plain;charset=utf-8'}, // evita il preflight CORS, non gestito da Apps Script
+    body: JSON.stringify({action:'set', key, value: JSON.stringify(value)}),
+  });
+  if(!res.ok) throw new Error('Errore di rete (HTTP ' + res.status + ')');
+  const json = await res.json();
+  if(!json.ok) throw new Error(json.error || 'Errore nel salvataggio dei dati sul foglio');
+  return true;
+}
+async function kvDelete(key){
+  const url = getUrlAppsScript();
+  if(!url) throw new Error('Nessun Google Sheet configurato su questo dispositivo.');
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type': 'text/plain;charset=utf-8'},
+    body: JSON.stringify({action:'delete', key}),
+  });
+  if(!res.ok) throw new Error('Errore di rete (HTTP ' + res.status + ')');
+  const json = await res.json();
+  if(!json.ok) throw new Error(json.error || 'Errore nell\'eliminazione dei dati sul foglio');
+  return true;
+}
+async function testaConnessioneAppsScript(url){
+  const res = await fetch(`${url}?action=ping`);
+  if(!res.ok) throw new Error('Errore di rete (HTTP ' + res.status + ')');
+  const json = await res.json();
+  if(!json.ok) throw new Error(json.error || 'Risposta non valida dal foglio');
+  return true;
+}
+async function chiamaAzionePost(azione, payload){
+  const url = getUrlAppsScript();
+  if(!url) throw new Error('Nessun Google Sheet configurato su questo dispositivo.');
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type': 'text/plain;charset=utf-8'},
+    body: JSON.stringify({action: azione, ...payload}),
+  });
+  if(!res.ok) throw new Error('Errore di rete (HTTP ' + res.status + ')');
+  const json = await res.json();
+  if(!json.ok) throw new Error(json.error || 'Errore nella richiesta al foglio');
+  return json;
+}
+async function chiamaAzioneGet(azione, parametri){
+  const url = getUrlAppsScript();
+  if(!url) throw new Error('Nessun Google Sheet configurato su questo dispositivo.');
+  const query = new URLSearchParams({action: azione, ...parametri}).toString();
+  const res = await fetch(`${url}?${query}`);
+  if(!res.ok) throw new Error('Errore di rete (HTTP ' + res.status + ')');
+  const json = await res.json();
+  if(!json.ok) throw new Error(json.error || 'Errore nella richiesta al foglio');
+  return json;
+}
+async function elencoFotoLavorazione(nomeCantiere, nomeLavorazione){
+  try{
+    const risposta = await chiamaAzioneGet('listaFotoLavorazione', {cantiere: nomeCantiere, lavorazione: nomeLavorazione});
+    return risposta.file || [];
+  }catch(e){
+    console.error('Errore nel leggere le foto della lavorazione', nomeLavorazione, e);
+    return [];
+  }
+}
+async function scaricaFotoBase64(fileId){
+  const risposta = await chiamaAzioneGet('scaricaFoto', {fileId});
+  return risposta;
+}
+function estraiPercentualeDaNomeFile(nome){
+  const m = nome.match(/(\d{1,3})%/);
+  return m ? Number(m[1]) : null;
+}
+function trovaPercentualePiuVicina(percentualiDisponibili, target){
+  const successive = percentualiDisponibili.filter(p => p >= target).sort((a,b)=>a-b);
+  if(successive.length) return successive[0];
+  const precedenti = percentualiDisponibili.filter(p => p < target).sort((a,b)=>b-a);
+  if(precedenti.length) return precedenti[0];
+  return null;
+}
+function sceglieFotoCicloLavoro(elencoFile){
+  const conPercentuale = elencoFile
+    .map(f => ({...f, percentuale: estraiPercentualeDaNomeFile(f.nome)}))
+    .filter(f => f.percentuale !== null);
+  if(conPercentuale.length === 0) return [];
+  const percentualiDisponibili = [...new Set(conPercentuale.map(f => f.percentuale))];
+  const scelte = [];
+  const usate = new Set();
+  [25, 50, 75, 100].forEach(target => {
+    const percentualeScelta = trovaPercentualePiuVicina(percentualiDisponibili, target);
+    if(percentualeScelta === null) return;
+    const candidati = conPercentuale
+      .filter(f => f.percentuale === percentualeScelta && !usate.has(f.id))
+      .sort((a,b) => new Date(b.creato) - new Date(a.creato));
+    if(candidati.length){
+      scelte.push({...candidati[0], targetPercentuale: target});
+      usate.add(candidati[0].id);
+    }
+  });
+  return scelte;
+}
+
+/* ---- Report settimanale in PDF ---- */
+function caricaScriptEsterno(src){
+  return new Promise((resolve, reject) => {
+    if(document.querySelector(`script[src="${src}"]`)){ resolve(); return; }
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('Impossibile caricare una libreria necessaria per il PDF (serve connessione internet).'));
+    document.head.appendChild(s);
+  });
+}
+async function assicuraLibreriePdf(){
+  if(!window.jspdf){
+    await caricaScriptEsterno('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+  }
+  if(!window.jspdf.jsPDF.API.autoTable){
+    await caricaScriptEsterno('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js');
+  }
+}
+const GIORNI_SETTIMANA_BREVI = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
+function eventiCategorizzatiPerGiorno(iso){
+  const cat = {arrivo:[], inizio:[], ordini:[], note:[]};
+  state.ordini.forEach(o => {
+    if(o.dataOrdine === iso) cat.ordini.push(o.nome + (o.fornitore ? ' ('+o.fornitore+')' : ''));
+    if(o.dataEffettiva === iso) cat.arrivo.push(o.nome + (o.statoParziale==='parziale' ? ' (parziale)' : ''));
+    else if(o.dataPrevista === iso && !o.dataEffettiva) cat.arrivo.push(o.nome + ' (previsto)');
+  });
+  state.lavorazioni.forEach(l => {
+    if(l.dataInizio === iso) cat.inizio.push(l.nome);
+  });
+  state.calendario.forEach(c => {
+    if(c.data === iso){
+      cat.note.push(`${c.tipo==='appuntamento'?'Appuntamento':'Nota'}: ${c.titolo}`);
+    } else if(c.ricorrenteSettimanale && c.data < iso){
+      const start = new Date(c.data), cur = new Date(iso);
+      if(start.getDay() === cur.getDay()) cat.note.push(`${c.tipo==='appuntamento'?'Appuntamento':'Nota'}: ${c.titolo}`);
+    }
+  });
+  return cat;
+}
+async function aggiungiPannelloFotoLavorazioniCompletate(doc, lavorazioniCompletate, nomeCantiere, margineSx, larghezzaPagina){
+  if(lavorazioniCompletate.length === 0) return;
+  doc.addPage();
+  let y = 18;
+  doc.setFont('helvetica','bold'); doc.setFontSize(14);
+  doc.text('Ciclo lavorativo — lavorazioni completate', margineSx, y);
+  y += 10;
+
+  for(const lav of lavorazioniCompletate){
+    let elenco = [];
+    try{ elenco = await elencoFotoLavorazione(nomeCantiere, lav.nome); }catch(e){ elenco = []; }
+    const foto = sceglieFotoCicloLavoro(elenco);
+    if(foto.length === 0) continue;
+
+    if(y > 220){ doc.addPage(); y = 18; }
+    doc.setFont('helvetica','bold'); doc.setFontSize(11);
+    doc.text(lav.nome, margineSx, y);
+    y += 6;
+
+    const larghezzaFoto = 42;
+    const altezzaFoto = 32;
+    const spazio = 4;
+    let x = margineSx;
+    for(const f of foto){
+      try{
+        const dati = await scaricaFotoBase64(f.id);
+        const formato = (dati.mimeType||'').indexOf('png') !== -1 ? 'PNG' : 'JPEG';
+        doc.addImage('data:'+dati.mimeType+';base64,'+dati.base64, formato, x, y, larghezzaFoto, altezzaFoto);
+        doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(90);
+        doc.text(`${f.targetPercentuale}%`, x + larghezzaFoto/2, y + altezzaFoto + 4, {align:'center'});
+        doc.setTextColor(0);
+      }catch(e){
+        console.error('Errore nel caricare una foto per il report', e);
+      }
+      x += larghezzaFoto + spazio;
+    }
+    y += altezzaFoto + 12;
+  }
+}
+
+function apriModaleReportSettimanale(){
+  openModal({
+    title: 'Report settimanale',
+    values: {dataRiferimento: todayISO()},
+    fields: [
+      {name:'dataRiferimento', label:'Scegli un giorno qualsiasi della settimana desiderata (lun-dom)', type:'date', required:true},
+    ],
+    submitLabel: 'Genera report',
+    onSubmit: (data) => {
+      const [aa,mm,gg] = data.dataRiferimento.split('-').map(Number);
+      generaReportSettimanale(new Date(aa, mm-1, gg));
+    }
+  });
+}
+function apriModaleReportMensile(){
+  const oggi = new Date();
+  const meseDefault = `${oggi.getFullYear()}-${String(oggi.getMonth()+1).padStart(2,'0')}`;
+  openModal({
+    title: 'Report mensile',
+    values: {meseRiferimento: meseDefault},
+    fields: [
+      {name:'meseRiferimento', label:'Mese di riferimento', type:'month', required:true},
+    ],
+    submitLabel: 'Genera report',
+    onSubmit: (data) => {
+      const [aa,mm] = data.meseRiferimento.split('-').map(Number);
+      generaReportMensile(new Date(aa, mm-1, 1));
+    }
+  });
+}
+async function generaReportSettimanale(dataRiferimento){
+  mostraCaricamento(true);
+  try{
+    await assicuraLibreriePdf();
+    const { jsPDF } = window.jspdf;
+
+    const oggi = dataRiferimento || new Date();
+    const inizio = startOfWeek(oggi);
+    const giorni = [];
+    for(let i=0;i<7;i++){ const d = new Date(inizio); d.setDate(inizio.getDate()+i); giorni.push(d); }
+    const isoGiorni = giorni.map(toLocalISODate);
+    const isoInizio = isoGiorni[0], isoFine = isoGiorni[6];
+
+    const doc = new jsPDF({orientation:'portrait', unit:'mm', format:'a4'});
+    const nomeCant = state.nomeCantiereAttivo || 'Cantiere';
+    const larghezzaPagina = doc.internal.pageSize.getWidth();
+    const margineSx = 14;
+    let y = 18;
+
+    function nuovaPaginaSeServe(soglia){
+      if(y > (soglia || 270)){ doc.addPage(); y = 18; }
+    }
+
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(18);
+    doc.text('Report settimanale', margineSx, y);
+    y += 8;
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(11);
+    doc.text(`Cantiere: ${nomeCant}`, margineSx, y);
+    y += 6;
+    doc.text(`Settimana: ${fmtDate(isoInizio)} - ${fmtDate(isoFine)}`, margineSx, y);
+    y += 5;
+    doc.setFontSize(8);
+    doc.setTextColor(120);
+    doc.text(`Generato il ${fmtDate(todayISO())}`, margineSx, y);
+    doc.setTextColor(0);
+    y += 8;
+
+    /* --- Tabella settimana: una riga sola, tutti gli avvenimenti del giorno insieme --- */
+    const eventiGiorni = isoGiorni.map(eventiCategorizzatiPerGiorno);
+    const testateGiorni = giorni.map((d,i) => `${GIORNI_SETTIMANA_BREVI[i]}\n${fmtDataBreve(isoGiorni[i])}`);
+    const rigaUnica = eventiGiorni.map(e => {
+      const tutti = [
+        ...e.arrivo.map(t => 'Arrivo: ' + t),
+        ...e.inizio.map(t => 'Inizio: ' + t),
+        ...e.ordini.map(t => 'Ordine: ' + t),
+        ...e.note,
+      ];
+      return tutti.join('\n') || '-';
+    });
+    doc.autoTable({
+      startY: y,
+      head: [testateGiorni],
+      body: [rigaUnica],
+      styles:{fontSize:7, cellPadding:2, valign:'top', halign:'left'},
+      headStyles:{fillColor:[22,35,46], textColor:255, halign:'center', fontSize:8},
+      margin:{left:margineSx, right:margineSx},
+    });
+    y = doc.lastAutoTable.finalY + 10;
+
+    /* --- Persone: totale ore della settimana --- */
+    nuovaPaginaSeServe();
+    doc.setFont('helvetica','bold'); doc.setFontSize(13);
+    doc.text('Persone', margineSx, y); y += 7;
+    doc.setFont('helvetica','normal'); doc.setFontSize(10);
+    const oreSettimanaPersone = state.persone
+      .map(p => ({ nome: p.nome, tot: (p.log||[]).filter(l => l.data >= isoInizio && l.data <= isoFine).reduce((s,l)=>s+Number(l.ore||0),0) }))
+      .filter(x => x.tot > 0);
+    if(oreSettimanaPersone.length === 0){
+      doc.setTextColor(140); doc.text('Nessuna ora registrata questa settimana.', margineSx, y); doc.setTextColor(0); y += 6;
+    } else {
+      oreSettimanaPersone.forEach(x => {
+        doc.text(`${x.nome} - ${x.tot} ore`, margineSx, y);
+        y += 6;
+        nuovaPaginaSeServe();
+      });
+    }
+    y += 5;
+
+    /* --- Lavorazioni: avanzamento inizio -> fine settimana --- */
+    nuovaPaginaSeServe();
+    doc.setFont('helvetica','bold'); doc.setFontSize(13);
+    doc.text('Lavorazioni', margineSx, y); y += 7;
+    doc.setFont('helvetica','normal'); doc.setFontSize(10);
+    const snapshotPrec = state.snapshotSettimanale;
+    const righeAvanzamento = state.lavorazioni
+      .filter(l => !l.dataCompletamento || (l.dataCompletamento >= isoInizio))
+      .map(l => {
+        const percOra = Number(l.statoAvanzamento||0);
+        const percPrima = (snapshotPrec && snapshotPrec.valori && snapshotPrec.valori[l.id] !== undefined) ? snapshotPrec.valori[l.id] : null;
+        return { nome: l.nome, percPrima, percOra };
+      });
+    if(righeAvanzamento.length === 0){
+      doc.setTextColor(140); doc.text('Nessuna lavorazione aperta.', margineSx, y); doc.setTextColor(0); y += 6;
+    } else {
+      righeAvanzamento.forEach(r => {
+        const testo = r.percPrima!==null ? `${r.nome}: ${r.percPrima}% -> ${r.percOra}%` : `${r.nome}: ${r.percOra}% (primo report)`;
+        doc.text(testo, margineSx, y);
+        y += 6;
+        nuovaPaginaSeServe();
+      });
+    }
+    y += 5;
+
+    /* --- Eventi della settimana --- */
+    nuovaPaginaSeServe();
+    doc.setFont('helvetica','bold'); doc.setFontSize(13);
+    doc.text('Eventi', margineSx, y); y += 7;
+    doc.setFont('helvetica','normal'); doc.setFontSize(10);
+    const eventiSettimana = state.eventi.filter(e => e.data >= isoInizio && e.data <= isoFine).sort((a,b)=>a.data.localeCompare(b.data));
+    if(eventiSettimana.length === 0){
+      doc.setTextColor(140); doc.text('Nessun evento registrato questa settimana.', margineSx, y); doc.setTextColor(0); y += 6;
+    } else {
+      eventiSettimana.forEach(e => {
+        const etichetta = e.tipo==='positivo' ? 'Positivo' : e.tipo==='negativo' ? 'Negativo' : 'Neutro';
+        const righe = doc.splitTextToSize(`${fmtDataBreve(e.data)} [${etichetta}] - ${e.titolo}`, larghezzaPagina - margineSx*2);
+        doc.text(righe, margineSx, y);
+        y += 6 * righe.length;
+        nuovaPaginaSeServe();
+      });
+    }
+    y += 5;
+
+    /* --- Note: riassunto del diario di cantiere della settimana --- */
+    nuovaPaginaSeServe();
+    doc.setFont('helvetica','bold'); doc.setFontSize(13);
+    doc.text('Note', margineSx, y); y += 7;
+    doc.setFont('helvetica','normal'); doc.setFontSize(10);
+    const diarioSettimana = state.diario.filter(v => v.data >= isoInizio && v.data <= isoFine).sort((a,b)=>a.data.localeCompare(b.data));
+    if(diarioSettimana.length === 0){
+      doc.setTextColor(140); doc.text('Nessuna voce di diario questa settimana.', margineSx, y); doc.setTextColor(0); y += 6;
+    } else {
+      diarioSettimana.forEach(v => {
+        const riassunto = (v.attivita||'').replace(/\s+/g,' ').trim();
+        const riassuntoBreve = riassunto.length > 160 ? riassunto.slice(0,160) + '...' : riassunto;
+        const righe = doc.splitTextToSize(`${fmtDataBreve(v.data)} - ${riassuntoBreve}`, larghezzaPagina - margineSx*2);
+        doc.text(righe, margineSx, y);
+        y += 6 * righe.length + 1;
+        nuovaPaginaSeServe();
+      });
+    }
+
+    /* --- Ciclo lavorativo: foto delle lavorazioni completate in questa settimana --- */
+    const lavorazioniCompletateSettimana = state.lavorazioni.filter(l => l.dataCompletamento && l.dataCompletamento >= isoInizio && l.dataCompletamento <= isoFine);
+    await aggiungiPannelloFotoLavorazioniCompletate(doc, lavorazioniCompletateSettimana, nomeCant, margineSx, larghezzaPagina);
+
+    const datiUriPdf = doc.output('datauristring');
+    const pdfBase64 = datiUriPdf.substring(datiUriPdf.indexOf('base64,') + 7);
+    const nomeFile = `Report settimanale - ${fmtDataBreve(isoInizio).replace(/\//g,'-')} - ${fmtDataBreve(isoFine).replace(/\//g,'-')}`;
+
+    const risposta = await chiamaAzionePost('uploadReportPdf', {
+      cantiere: nomeCant,
+      tipo: 'settimanale',
+      nomeFile,
+      pdfBase64,
+    });
+
+    const nuovoSnapshot = {data: todayISO(), valori: {}};
+    state.lavorazioni.forEach(l => { nuovoSnapshot.valori[l.id] = Number(l.statoAvanzamento||0); });
+    state.snapshotSettimanale = nuovoSnapshot;
+    persist();
+
+    mostraToast('Report creato ✓');
+    if(risposta.fileUrl) window.open(risposta.fileUrl, '_blank');
+  }catch(e){
+    alert('Errore nella generazione del report: ' + e.message);
+  }
+  mostraCaricamento(false);
+}
+async function generaReportMensile(dataRiferimento){
+  mostraCaricamento(true);
+  try{
+    await assicuraLibreriePdf();
+    const { jsPDF } = window.jspdf;
+
+    const oggi = dataRiferimento || new Date();
+    const primoGiorno = new Date(oggi.getFullYear(), oggi.getMonth(), 1);
+    const ultimoGiorno = new Date(oggi.getFullYear(), oggi.getMonth()+1, 0);
+    const isoInizio = toLocalISODate(primoGiorno);
+    const isoFine = toLocalISODate(ultimoGiorno);
+    const nomeMese = `${MESI[oggi.getMonth()]} ${oggi.getFullYear()}`;
+
+    const doc = new jsPDF({orientation:'portrait', unit:'mm', format:'a4'});
+    const nomeCant = state.nomeCantiereAttivo || 'Cantiere';
+    const larghezzaPagina = doc.internal.pageSize.getWidth();
+    const margineSx = 10;
+    let y = 15;
+
+    function nuovaPaginaSeServe(soglia){
+      if(y > (soglia || 270)){ doc.addPage(); y = 18; }
+    }
+
+    /* --- Pagina 1: intestazione + calendario del mese in grande --- */
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(18);
+    doc.text('Report mensile', margineSx, y);
+    y += 8;
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(11);
+    doc.text(`Cantiere: ${nomeCant}`, margineSx, y);
+    y += 6;
+    doc.text(`Mese: ${nomeMese}`, margineSx, y);
+    y += 5;
+    doc.setFontSize(8);
+    doc.setTextColor(120);
+    doc.text(`Generato il ${fmtDate(todayISO())}`, margineSx, y);
+    doc.setTextColor(0);
+    y += 8;
+
+    const offsetPrimoGiorno = (primoGiorno.getDay()+6)%7; // lun=0
+    const inizioGriglia = new Date(primoGiorno);
+    inizioGriglia.setDate(primoGiorno.getDate() - offsetPrimoGiorno);
+    const numSettimane = Math.ceil((offsetPrimoGiorno + ultimoGiorno.getDate()) / 7);
+    const corpoCalendario = [];
+    for(let s=0; s<numSettimane; s++){
+      const riga = [];
+      for(let g=0; g<7; g++){
+        const d = new Date(inizioGriglia);
+        d.setDate(inizioGriglia.getDate() + s*7 + g);
+        if(d.getMonth() !== primoGiorno.getMonth()){
+          riga.push('');
+        } else {
+          const iso = toLocalISODate(d);
+          const e = eventiCategorizzatiPerGiorno(iso);
+          const righeTesto = [
+            ...e.arrivo.map(t => 'Arrivo: ' + t),
+            ...e.inizio.map(t => 'Inizio: ' + t),
+            ...e.ordini.map(t => 'Ordine: ' + t),
+            ...e.note,
+          ];
+          riga.push(String(d.getDate()) + (righeTesto.length ? '\n' + righeTesto.join('\n') : ''));
+        }
+      }
+      corpoCalendario.push(riga);
+    }
+    doc.autoTable({
+      startY: y,
+      head: [['Lun','Mar','Mer','Gio','Ven','Sab','Dom']],
+      body: corpoCalendario,
+      styles:{fontSize:6.5, cellPadding:1.5, valign:'top', minCellHeight:22, overflow:'linebreak'},
+      headStyles:{fillColor:[22,35,46], textColor:255, halign:'center', fontSize:9},
+      margin:{left:margineSx, right:margineSx},
+      theme:'grid',
+    });
+
+    /* --- Pagina 2 in poi: Persone, Lavorazioni, Eventi, Note --- */
+    doc.addPage();
+    y = 18;
+    const margineTesto = 14;
+
+    doc.setFont('helvetica','bold'); doc.setFontSize(13);
+    doc.text('Persone', margineTesto, y); y += 7;
+    doc.setFont('helvetica','normal'); doc.setFontSize(10);
+    const oreMesePersone = state.persone
+      .map(p => ({ nome: p.nome, tot: oreTotaliPersonaMese(p, primoGiorno) }))
+      .filter(x => x.tot > 0);
+    if(oreMesePersone.length === 0){
+      doc.setTextColor(140); doc.text('Nessuna ora registrata questo mese.', margineTesto, y); doc.setTextColor(0); y += 6;
+    } else {
+      oreMesePersone.forEach(x => {
+        doc.text(`${x.nome} - ${x.tot.toFixed(1)} ore`, margineTesto, y);
+        y += 6;
+        nuovaPaginaSeServe();
+      });
+    }
+    y += 5;
+
+    nuovaPaginaSeServe();
+    doc.setFont('helvetica','bold'); doc.setFontSize(13);
+    doc.text('Lavorazioni', margineTesto, y); y += 7;
+    doc.setFont('helvetica','normal'); doc.setFontSize(10);
+    const snapshotPrec = state.snapshotMensile;
+    const righeAvanzamento = state.lavorazioni
+      .filter(l => !l.dataCompletamento || (l.dataCompletamento >= isoInizio))
+      .map(l => {
+        const percOra = Number(l.statoAvanzamento||0);
+        const percPrima = (snapshotPrec && snapshotPrec.valori && snapshotPrec.valori[l.id] !== undefined) ? snapshotPrec.valori[l.id] : null;
+        return { nome: l.nome, percPrima, percOra };
+      });
+    if(righeAvanzamento.length === 0){
+      doc.setTextColor(140); doc.text('Nessuna lavorazione aperta.', margineTesto, y); doc.setTextColor(0); y += 6;
+    } else {
+      righeAvanzamento.forEach(r => {
+        const testo = r.percPrima!==null ? `${r.nome}: ${r.percPrima}% -> ${r.percOra}%` : `${r.nome}: ${r.percOra}% (primo report)`;
+        doc.text(testo, margineTesto, y);
+        y += 6;
+        nuovaPaginaSeServe();
+      });
+    }
+    y += 5;
+
+    nuovaPaginaSeServe();
+    doc.setFont('helvetica','bold'); doc.setFontSize(13);
+    doc.text('Eventi', margineTesto, y); y += 7;
+    doc.setFont('helvetica','normal'); doc.setFontSize(10);
+    const eventiMese = state.eventi.filter(e => e.data >= isoInizio && e.data <= isoFine).sort((a,b)=>a.data.localeCompare(b.data));
+    if(eventiMese.length === 0){
+      doc.setTextColor(140); doc.text('Nessun evento registrato questo mese.', margineTesto, y); doc.setTextColor(0); y += 6;
+    } else {
+      eventiMese.forEach(e => {
+        const etichetta = e.tipo==='positivo' ? 'Positivo' : e.tipo==='negativo' ? 'Negativo' : 'Neutro';
+        const righe = doc.splitTextToSize(`${fmtDataBreve(e.data)} [${etichetta}] - ${e.titolo}`, larghezzaPagina - margineTesto*2);
+        doc.text(righe, margineTesto, y);
+        y += 6 * righe.length;
+        nuovaPaginaSeServe();
+      });
+    }
+    y += 5;
+
+    nuovaPaginaSeServe();
+    doc.setFont('helvetica','bold'); doc.setFontSize(13);
+    doc.text('Note', margineTesto, y); y += 7;
+    doc.setFont('helvetica','normal'); doc.setFontSize(10);
+    const diarioMese = state.diario.filter(v => v.data >= isoInizio && v.data <= isoFine).sort((a,b)=>a.data.localeCompare(b.data));
+    if(diarioMese.length === 0){
+      doc.setTextColor(140); doc.text('Nessuna voce di diario questo mese.', margineTesto, y); doc.setTextColor(0); y += 6;
+    } else {
+      diarioMese.forEach(v => {
+        const riassunto = (v.attivita||'').replace(/\s+/g,' ').trim();
+        const riassuntoBreve = riassunto.length > 160 ? riassunto.slice(0,160) + '...' : riassunto;
+        const righe = doc.splitTextToSize(`${fmtDataBreve(v.data)} - ${riassuntoBreve}`, larghezzaPagina - margineTesto*2);
+        doc.text(righe, margineTesto, y);
+        y += 6 * righe.length + 1;
+        nuovaPaginaSeServe();
+      });
+    }
+
+    /* --- Ciclo lavorativo: foto delle lavorazioni completate in questo mese --- */
+    const lavorazioniCompletateMese = state.lavorazioni.filter(l => l.dataCompletamento && l.dataCompletamento >= isoInizio && l.dataCompletamento <= isoFine);
+    await aggiungiPannelloFotoLavorazioniCompletate(doc, lavorazioniCompletateMese, nomeCant, margineTesto, larghezzaPagina);
+
+    const datiUriPdf = doc.output('datauristring');
+    const pdfBase64 = datiUriPdf.substring(datiUriPdf.indexOf('base64,') + 7);
+    const nomeFile = `Report mensile - ${nomeMese}`;
+
+    const risposta = await chiamaAzionePost('uploadReportPdf', {
+      cantiere: nomeCant,
+      tipo: 'mensile',
+      nomeFile,
+      pdfBase64,
+    });
+
+    const nuovoSnapshot = {data: todayISO(), valori: {}};
+    state.lavorazioni.forEach(l => { nuovoSnapshot.valori[l.id] = Number(l.statoAvanzamento||0); });
+    state.snapshotMensile = nuovoSnapshot;
+    persist();
+
+    mostraToast('Report creato ✓');
+    if(risposta.fileUrl) window.open(risposta.fileUrl, '_blank');
+  }catch(e){
+    alert('Errore nella generazione del report: ' + e.message);
+  }
+  mostraCaricamento(false);
+}
+
+/* ---- Fotocamera e ridimensionamento immagini ---- */
+function apriFotocamera(){
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.capture = 'environment';
+    input.style.display = 'none';
+    input.onchange = () => {
+      const file = input.files && input.files[0] ? input.files[0] : null;
+      document.body.removeChild(input);
+      resolve(file);
+    };
+    document.body.appendChild(input);
+    input.click();
+  });
+}
+function ridimensionaImmagine(file, maxLato, qualita){
+  maxLato = maxLato || 1280;
+  qualita = qualita || 0.72;
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Impossibile leggere la foto.'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Impossibile elaborare la foto.'));
+      img.onload = () => {
+        let { width, height } = img;
+        if(width > maxLato || height > maxLato){
+          if(width >= height){ height = Math.round(height * (maxLato / width)); width = maxLato; }
+          else { width = Math.round(width * (maxLato / height)); height = maxLato; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', qualita);
+        resolve(dataUrl.split(',')[1]);
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ---- Indicatore di sincronizzazione (in alto) ---- */
+let toastTimer = null;
+function mostraToast(testo){
+  const el = document.getElementById('toast-salvataggio');
+  if(!el) return;
+  el.textContent = testo;
+  el.style.opacity = '1';
+  el.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateX(-50%) translateY(80px)';
+  }, 1400);
+}
+function mostraToastSalvato(){ mostraToast('Salvato ✓'); }
+let caricamentiFotoInCorso = 0;
+function aggiornaIndicatoreCaricamentoFoto(){
+  const el = document.getElementById('indicatore-foto');
+  if(!el) return;
+  if(caricamentiFotoInCorso > 0){
+    el.textContent = `📤 Caricamento foto: ${caricamentiFotoInCorso} in corso…`;
+    el.style.display = 'block';
+  } else {
+    el.style.display = 'none';
+  }
+}
+function copiaTesto(testo){
+  function fallbackPrompt(){ window.prompt('Copia il testo qui sotto:', testo); }
+  function fallbackExec(){
+    try{
+      const ta = document.createElement('textarea');
+      ta.value = testo;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      if(ok) mostraToast('Copiato ✓'); else fallbackPrompt();
+    }catch(e){
+      fallbackPrompt();
+    }
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext){
+    navigator.clipboard.writeText(testo).then(() => mostraToast('Copiato ✓')).catch(fallbackExec);
+  } else {
+    fallbackExec();
+  }
+}
+function impostaStatoSync(stato, dettaglio){
+  const el = document.getElementById('stato-sync');
+  if(!el) return;
+  const mappa = {
+    ok: {testo:'● Sincronizzato', classe:'badge-green'},
+    salvataggio: {testo:'● Salvataggio…', classe:'badge-orange'},
+    errore: {testo:'● Errore di sincronizzazione', classe:'badge-red'},
+  };
+  const m = mappa[stato] || mappa.ok;
+  el.className = 'badge ' + m.classe;
+  el.textContent = m.testo;
+  el.title = dettaglio || '';
+}
+
+function caricaListaCantieri(){
+  return kvGet(LS_KEY_LISTA).then(v => v || []);
+}
+function salvaListaCantieri(lista){
+  return kvSet(LS_KEY_LISTA, lista);
+}
+function caricaDatiCantiere(id){
+  return kvGet(dataKeyCantiere(id)).then(v => v || datiVuoti());
+}
+
+/* ---- Cache locale per avvio istantaneo (letta subito, poi confermata/aggiornata da Google Sheets in background) ---- */
+const LS_KEY_CACHE_LISTA = LS_PREFIX + 'cache-lista-cantieri';
+function cacheKeyDatiCantiere(id){ return LS_PREFIX + 'cache-dati-' + id; }
+function caricaCacheListaLocale(){ return lsGet(LS_KEY_CACHE_LISTA, null); }
+function salvaCacheListaLocale(lista){ lsSet(LS_KEY_CACHE_LISTA, lista); }
+function caricaCacheDatiLocale(id){ return lsGet(cacheKeyDatiCantiere(id), null); }
+function salvaCacheDatiLocale(id, dati){ lsSet(cacheKeyDatiCantiere(id), dati); }
+function applicaDatiAStato(dati){
+  state.lavorazioni = dati.lavorazioni || [];
+  state.ordini = dati.ordini || [];
+  state.persone = dati.persone || [];
+  state.eventi = dati.eventi || [];
+  state.calendario = dati.calendario || [];
+  state.attivitaVarie = dati.attivitaVarie || [];
+  state.diario = dati.diario || [];
+  state.materialiDaOrdinare = dati.materialiDaOrdinare || [];
+  state.snapshotSettimanale = dati.snapshotSettimanale || null;
+  state.snapshotMensile = dati.snapshotMensile || null;
+  state.rischi = dati.rischi || [];
+  state.contrattiSal = dati.contrattiSal || [];
+  state.attivitaOre = dati.attivitaOre || [];
+}
+function raccogliDatiStato(){
+  return {
+    lavorazioni: state.lavorazioni,
+    ordini: state.ordini,
+    persone: state.persone,
+    eventi: state.eventi,
+    calendario: state.calendario,
+    attivitaVarie: state.attivitaVarie,
+    diario: state.diario,
+    materialiDaOrdinare: state.materialiDaOrdinare,
+    snapshotSettimanale: state.snapshotSettimanale,
+    snapshotMensile: state.snapshotMensile,
+    rischi: state.rischi,
+    contrattiSal: state.contrattiSal,
+    attivitaOre: state.attivitaOre,
+  };
+}
+
+let riprovaPersistTimer = null;
+let codaPersist = Promise.resolve();
+function persist(){
+  codaPersist = codaPersist.then(() => persistImpl()).catch(() => {});
+  return codaPersist;
+}
+async function persistImpl(){
+  const dati = raccogliDatiStato();
+  impostaStatoSync('salvataggio');
+  try{
+    await kvSet(dataKeyCantiere(state.cantiereAttivoId), dati);
+    salvaCacheDatiLocale(state.cantiereAttivoId, dati);
+    const lista = await caricaListaCantieri();
+    const meta = lista.find(c => c.id === state.cantiereAttivoId);
+    if(meta) meta.ultimaModifica = new Date().toISOString();
+    await salvaListaCantieri(lista);
+    salvaCacheListaLocale(lista);
+    impostaStatoSync('ok');
+    mostraToastSalvato();
+  }catch(e){
+    console.error('Errore di sincronizzazione', e);
+    impostaStatoSync('errore', e.message + ' — verrà ritentato tra poco.');
+    clearTimeout(riprovaPersistTimer);
+    riprovaPersistTimer = setTimeout(persist, 8000);
+  }
+}
+
+/* ============ GESTIONE MULTI-CANTIERE ============ */
+async function creaCantiere(nome){
+  const lista = await caricaListaCantieri();
+  const id = uid();
+  lista.push({id, nome: nome || 'Nuovo cantiere', creato: new Date().toISOString(), ultimaModifica: new Date().toISOString()});
+  await salvaListaCantieri(lista);
+  await kvSet(dataKeyCantiere(id), datiVuoti());
+  return id;
+}
+async function eliminaCantiere(id){
+  let lista = await caricaListaCantieri();
+  lista = lista.filter(c => c.id !== id);
+  await salvaListaCantieri(lista);
+  try{ await kvDelete(dataKeyCantiere(id)); }catch(e){}
+  return lista;
+}
+async function rinominaCantiere(id, nuovoNome){
+  const lista = await caricaListaCantieri();
+  const meta = lista.find(c => c.id === id);
+  if(meta) meta.nome = nuovoNome;
+  await salvaListaCantieri(lista);
+}
+async function passaACantiere(id){
+  state.cantiereAttivoId = id;
+  lsSet(LS_KEY_ATTIVO, id);
+  state.section = 'dashboard';
+  state.selectedDay = null;
+
+  const datiCache = caricaCacheDatiLocale(id);
+  const listaCache = caricaCacheListaLocale();
+  let dipintoDaCache = false;
+  if(datiCache){
+    applicaDatiAStato(datiCache);
+    if(listaCache){
+      const meta = listaCache.find(c => c.id === id);
+      state.nomeCantiereAttivo = meta ? meta.nome : 'Cantiere';
+      document.getElementById('stamp-nome-cantiere').textContent = state.nomeCantiereAttivo;
+    }
+    renderAll();
+    dipintoDaCache = true;
+  } else {
+    mostraCaricamento(true);
+  }
+
+  try{
+    const dati = await caricaDatiCantiere(id);
+    applicaDatiAStato(dati);
+    salvaCacheDatiLocale(id, dati);
+    await renderStamp();
+    renderAll();
+    impostaStatoSync('ok');
+  }catch(e){
+    if(!dipintoDaCache){
+      alert('Errore nel caricare il cantiere: ' + e.message);
+    }
+    impostaStatoSync('errore', e.message);
+  }
+  mostraCaricamento(false);
+}
+async function renderStamp(){
+  try{
+    const lista = await caricaListaCantieri();
+    salvaCacheListaLocale(lista);
+    const meta = lista.find(c => c.id === state.cantiereAttivoId);
+    state.nomeCantiereAttivo = meta ? meta.nome : 'Cantiere';
+    document.getElementById('stamp-nome-cantiere').textContent = state.nomeCantiereAttivo;
+  }catch(e){
+    if(!state.nomeCantiereAttivo) document.getElementById('stamp-nome-cantiere').textContent = '⚠ errore di connessione';
+  }
+}
+function mostraCaricamento(mostra){
+  const el = document.getElementById('overlay-caricamento');
+  if(el) el.style.display = mostra ? 'flex' : 'none';
+}
+
+/* ============ MODALE GESTIONE CANTIERI ============ */
+async function apriGestioneCantieri(){
+  const overlay = document.getElementById('overlay');
+  const modal = document.getElementById('modal');
+  modal.style.maxWidth = '';
+  modal.innerHTML = `<div style="text-align:center;padding:30px;color:var(--muted);">Caricamento cantieri…</div>`;
+  overlay.classList.add('open');
+  await disegnaModaleCantieri();
+  async function disegnaModaleCantieri(){
+    let lista;
+    try{
+      lista = (await caricaListaCantieri()).sort((a,b) => (b.ultimaModifica||'').localeCompare(a.ultimaModifica||''));
+    }catch(e){
+      modal.innerHTML = `<div style="text-align:center;padding:30px;color:var(--red);">Impossibile contattare Google Sheets.<br><span style="font-size:12px;color:var(--muted);">${esc(e.message)}</span></div>
+        <div class="modal-actions"><button type="button" class="btn ghost" id="chiudi-errore-cantieri">Chiudi</button><button type="button" class="btn" id="apri-impostazioni-da-errore">Impostazioni connessione</button></div>`;
+      document.getElementById('chiudi-errore-cantieri').onclick = closeModal;
+      document.getElementById('apri-impostazioni-da-errore').onclick = () => apriImpostazioniConnessione();
+      return;
+    }
+    modal.innerHTML = `
+      <h3>Cantieri</h3>
+      <p style="font-size:12px;color:var(--muted);margin:-8px 0 14px;">Ogni cantiere mantiene dati e storico separati, sincronizzati su Google Sheets. Nulla viene mai cancellato automaticamente.</p>
+      <div id="lista-cantieri-modal">
+        ${lista.map(c => `
+          <div class="day-entry" style="align-items:center;">
+            <div>
+              <div style="font-family:'Oswald',sans-serif;${c.id===state.cantiereAttivoId?'color:var(--orange);':''}">${esc(c.nome)} ${c.id===state.cantiereAttivoId?'<span class="badge badge-orange">attivo</span>':''}</div>
+              <div style="font-size:11px;color:var(--muted);">creato il ${fmtDate((c.creato||'').slice(0,10))}</div>
+            </div>
+            <div class="row-actions">
+              ${c.id!==state.cantiereAttivoId?`<button class="icon-btn" data-apri="${c.id}">Apri</button>`:''}
+              <button class="icon-btn" data-elimina="${c.id}">Elimina</button>
+            </div>
+          </div>
+        `).join('') || '<div style="color:var(--muted);font-size:13px;">Nessun cantiere presente.</div>'}
+      </div>
+
+      <div class="subsection-title" style="margin:20px 0 10px;">Backup di sicurezza</div>
+      <p style="font-size:12px;color:var(--muted);margin:-4px 0 12px;">Scarica un file con tutti i cantieri e tutti i dati, oltre a quanto già sincronizzato su Google Sheets. Salvalo in una cartella Drive per una copia in più.</p>
+      <div class="modal-actions" style="justify-content:flex-start;gap:10px;flex-wrap:wrap;">
+        <button type="button" class="btn ghost" id="esporta-backup-btn">⬇ Esporta backup</button>
+        <button type="button" class="btn ghost" id="importa-backup-btn">⬆ Importa backup</button>
+        <button type="button" class="btn ghost" id="impostazioni-connessione-btn">⚙ Connessione Google Sheets</button>
+        <input type="file" id="importa-backup-file" accept="application/json" style="display:none;">
+      </div>
+
+      <div class="modal-actions" style="justify-content:space-between;margin-top:18px;">
+        <button type="button" class="btn ghost" id="chiudi-gestione-cantieri">Chiudi</button>
+        <button type="button" class="btn" id="nuovo-cantiere-btn">+ Nuovo cantiere</button>
+      </div>
+    `;
+    document.getElementById('esporta-backup-btn').onclick = esportaBackupCompleto;
+    document.getElementById('impostazioni-connessione-btn').onclick = () => apriImpostazioniConnessione();
+    document.getElementById('importa-backup-btn').onclick = () => document.getElementById('importa-backup-file').click();
+    document.getElementById('importa-backup-file').onchange = (e) => {
+      const file = e.target.files[0];
+      if(file) importaBackupDaFile(file, disegnaModaleCantieri);
+      e.target.value = '';
+    };
+    document.getElementById('chiudi-gestione-cantieri').onclick = closeModal;
+    document.getElementById('nuovo-cantiere-btn').onclick = async () => {
+      const nome = prompt('Nome del nuovo cantiere:', 'Cantiere ' + (lista.length+1));
+      if(nome === null) return;
+      mostraCaricamento(true);
+      try{
+        const id = await creaCantiere(nome.trim() || 'Nuovo cantiere');
+        await passaACantiere(id);
+        await disegnaModaleCantieri();
+      }catch(e){ alert('Errore nella creazione del cantiere: ' + e.message); }
+      mostraCaricamento(false);
+    };
+    modal.querySelectorAll('[data-apri]').forEach(b => {
+      b.onclick = async () => { await passaACantiere(b.dataset.apri); closeModal(); };
+    });
+    modal.querySelectorAll('[data-elimina]').forEach(b => {
+      b.onclick = async () => {
+        const id = b.dataset.elimina;
+        const target = lista.find(c => c.id === id);
+        const conferma = confirm(`Eliminare definitivamente "${target ? target.nome : ''}" e tutti i suoi dati? L'operazione non è reversibile.`);
+        if(!conferma) return;
+        mostraCaricamento(true);
+        try{
+          const nuovaLista = await eliminaCantiere(id);
+          if(id === state.cantiereAttivoId){
+            if(nuovaLista.length > 0){
+              await passaACantiere(nuovaLista[0].id);
+            } else {
+              const nuovoId = await creaCantiere('Cantiere Principale');
+              await passaACantiere(nuovoId);
+            }
+          }
+          await disegnaModaleCantieri();
+        }catch(e){ alert('Errore nell\'eliminazione: ' + e.message); }
+        mostraCaricamento(false);
+      };
+    });
+  }
+}
+async function esportaBackupCompleto(){
+  mostraCaricamento(true);
+  try{
+    const lista = await caricaListaCantieri();
+    const dati = {};
+    for(const c of lista){ dati[c.id] = await caricaDatiCantiere(c.id); }
+    const pacchetto = {
+      app: 'gestione-cantiere',
+      versione: 1,
+      esportatoIl: new Date().toISOString(),
+      cantieri: lista,
+      dati: dati,
+    };
+    const blob = new Blob([JSON.stringify(pacchetto, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const oggi = todayISO();
+    a.href = url;
+    a.download = `backup-gestione-cantiere-${oggi}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }catch(e){
+    alert('Errore durante l\'esportazione: ' + e.message);
+  }
+  mostraCaricamento(false);
+}
+function importaBackupDaFile(file, onDone){
+  const reader = new FileReader();
+  reader.onload = async () => {
+    let pacchetto;
+    try{
+      pacchetto = JSON.parse(reader.result);
+    }catch(e){
+      alert('Il file selezionato non è un backup valido (JSON non leggibile).');
+      return;
+    }
+    if(!pacchetto || !Array.isArray(pacchetto.cantieri) || typeof pacchetto.dati !== 'object'){
+      alert('Il file selezionato non ha il formato di backup atteso.');
+      return;
+    }
+    const conferma = confirm(`Questo backup contiene ${pacchetto.cantieri.length} cantiere/i (esportato il ${fmtDate((pacchetto.esportatoIl||'').slice(0,10))}). Verranno sostituiti tutti i cantieri e i dati attualmente presenti su Google Sheets. Continuare?`);
+    if(!conferma) return;
+    mostraCaricamento(true);
+    try{
+      await salvaListaCantieri(pacchetto.cantieri);
+      for(const id of Object.keys(pacchetto.dati)){
+        await kvSet(dataKeyCantiere(id), pacchetto.dati[id]);
+      }
+      const primoId = pacchetto.cantieri[0] ? pacchetto.cantieri[0].id : null;
+      if(primoId){
+        await passaACantiere(primoId);
+      }
+      if(onDone) await onDone();
+      alert('Backup importato correttamente.');
+    }catch(e){
+      alert('Errore durante l\'importazione: ' + e.message);
+    }
+    mostraCaricamento(false);
+  };
+  reader.onerror = () => alert('Impossibile leggere il file selezionato.');
+  reader.readAsText(file);
+}
+async function apriRinominaCantiere(){
+  let lista, meta;
+  try{
+    lista = await caricaListaCantieri();
+    meta = lista.find(c => c.id === state.cantiereAttivoId);
+  }catch(e){
+    alert('Impossibile contattare Google Sheets: ' + e.message);
+    return;
+  }
+  openModal({
+    title: 'Rinomina cantiere',
+    values: {nome: meta ? meta.nome : ''},
+    fields: [{name:'nome', label:'Titolo cantiere', type:'text', required:true}],
+    submitLabel: 'Rinomina',
+    onSubmit: async (data) => {
+      mostraCaricamento(true);
+      try{
+        await rinominaCantiere(state.cantiereAttivoId, data.nome.trim() || meta.nome);
+        await renderStamp();
+      }catch(e){ alert('Errore nel salvataggio: ' + e.message); }
+      mostraCaricamento(false);
+    }
+  });
+}
+
+/* ============ HELPERS ============ */
+function uid(){ return 'id' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function toLocalISODate(d){
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const g = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${g}`;
+}
+function todayISO(){ return toLocalISODate(new Date()); }
+function fmtDate(iso){
+  if(!iso) return '—';
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+function fmtDataBreve(iso){
+  if(!iso) return '—';
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}/${y.slice(2)}`;
+}
+function fmtEuro(n){
+  const v = Number(n)||0;
+  return v.toLocaleString('it-IT',{style:'currency',currency:'EUR',maximumFractionDigits:0});
+}
+function clamp(n,min,max){ return Math.max(min,Math.min(max,n)); }
+function esc(s){ if(s === undefined || s === null) return ''; return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function truncate(s, n){ if(!s) return ''; return s.length>n ? s.slice(0,n-1)+'…' : s; }
+function tipoColor(tipo){
+  const map = {
+    ordine: 'var(--blue)',
+    lavorazione: 'var(--orange)',
+    positivo: 'var(--green)',
+    negativo: 'var(--red)',
+    neutro: 'var(--muted)',
+    nota: '#7C8891',
+    appuntamento: 'var(--purple)',
+  };
+  return map[tipo] || 'var(--muted)';
+}
+
+/* ============ MODAL SYSTEM ============ */
+function openModal({title, fields, values={}, onSubmit, submitLabel='Salva', pulsanteExtra}){
+  const overlay = document.getElementById('overlay');
+  const modal = document.getElementById('modal');
+  modal.style.maxWidth = '';
+  modal.innerHTML = `
+    <h3>${esc(title)}</h3>
+    <form id="modal-form">
+      ${fields.map(f => renderField(f, values[f.name])).join('')}
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" id="modal-cancel">Annulla</button>
+        ${pulsanteExtra ? `<button type="button" class="btn ghost" id="modal-extra">${esc(pulsanteExtra.label)}</button>` : ''}
+        <button type="submit" class="btn">${esc(submitLabel)}</button>
+      </div>
+    </form>
+  `;
+  overlay.classList.add('open');
+  document.getElementById('modal-cancel').onclick = closeModal;
+  fields.forEach(f => {
+    if(f.type === 'dots'){
+      const wrapper = document.getElementById('f-'+f.name+'-wrapper');
+      const hidden = document.getElementById('f-'+f.name);
+      if(wrapper){
+        wrapper.querySelectorAll('.dot-picker-btn').forEach(btn => {
+          btn.onclick = () => {
+            const nuovo = (hidden.value === btn.dataset.dotValue) ? '' : btn.dataset.dotValue;
+            hidden.value = nuovo;
+            wrapper.querySelectorAll('.dot-picker-btn').forEach(b => { b.style.opacity = (b.dataset.dotValue === nuovo) ? '1' : '0.3'; b.style.transform = (b.dataset.dotValue === nuovo) ? 'scale(1.15)' : 'scale(1)'; });
+          };
+        });
+      }
+    }
+  });
+  function raccogliDati(){
+    const data = {};
+    fields.forEach(f => {
+      const el = document.getElementById('f-'+f.name);
+      if(f.type === 'checkbox'){ data[f.name] = el.checked; }
+      else if(f.type === 'number' || f.type === 'dots'){ data[f.name] = el.value === '' ? null : Number(el.value); }
+      else { data[f.name] = el.value; }
+    });
+    return data;
+  }
+  document.getElementById('modal-form').onsubmit = (e) => {
+    e.preventDefault();
+    const data = raccogliDati();
+    closeModal();
+    onSubmit(data);
+  };
+  if(pulsanteExtra){
+    document.getElementById('modal-extra').onclick = () => {
+      const form = document.getElementById('modal-form');
+      if(!form.reportValidity()) return;
+      const data = raccogliDati();
+      pulsanteExtra.onClick(data);
+    };
+  }
+}
+const COLORI_MOTIVAZIONE = {1:'#C4423C', 2:'#E8720C', 3:'#F2B705', 4:'#6FB1D9', 5:'#1C86C7'};
+function renderField(f, val){
+  const v = val === undefined || val === null ? (f.default !== undefined ? f.default : '') : val;
+  if(f.type === 'select'){
+    return `<div class="field"><label>${esc(f.label)}</label>
+      <select id="f-${f.name}">
+        ${f.options.map(o => `<option value="${esc(o.value)}" ${o.value===v?'selected':''}>${esc(o.label)}</option>`).join('')}
+      </select></div>`;
+  }
+  if(f.type === 'textarea'){
+    return `<div class="field"><label>${esc(f.label)}</label><textarea id="f-${f.name}" ${f.required?'required':''}>${esc(v)}</textarea></div>`;
+  }
+  if(f.type === 'checkbox'){
+    return `<div class="field field-check"><input type="checkbox" id="f-${f.name}" ${v?'checked':''}><label style="margin:0;">${esc(f.label)}</label></div>`;
+  }
+  if(f.type === 'dots'){
+    return `<div class="field">
+      <label>${esc(f.label)}</label>
+      <div id="f-${f.name}-wrapper" style="display:flex;gap:10px;align-items:center;margin-top:4px;">
+        ${[1,2,3,4,5].map(n => `<button type="button" class="dot-picker-btn" data-dot-value="${n}" title="${n}" style="width:30px;height:30px;border-radius:50%;border:none;cursor:pointer;background:${COLORI_MOTIVAZIONE[n]};opacity:${v==n?'1':'0.3'};transform:scale(${v==n?'1.15':'1'});transition:transform .1s ease, opacity .1s ease;"></button>`).join('')}
+      </div>
+      <input type="hidden" id="f-${f.name}" value="${v||''}">
+    </div>`;
+  }
+  return `<div class="field"><label>${esc(f.label)}</label><input type="${f.type}" id="f-${f.name}" value="${esc(v)}" ${f.required?'required':''} ${f.step?`step="${f.step}"`:''}></div>`;
+}
+function closeModal(){ document.getElementById('overlay').classList.remove('open'); }
+document.getElementById('overlay').addEventListener('click', (e) => { if(e.target.id === 'overlay') closeModal(); });
+
+/* ============ NAV ============ */
+function renderNav(){
+  const nav = document.getElementById('nav');
+  nav.innerHTML = SECTIONS.map(s => `
+    <button class="nav-tab ${state.section===s.id?'active':''}" data-section="${s.id}">
+      <span class="code">${s.code}</span>${esc(s.label)}
+    </button>
+  `).join('');
+  nav.querySelectorAll('.nav-tab').forEach(btn => {
+    btn.onclick = () => { state.section = btn.dataset.section; renderAll(); };
+  });
+}
+
+/* ============ DASHBOARD ============ */
+function renderDashboard(){
+  const l = state.lavorazioni, o = state.ordini, p = state.persone, ev = state.eventi;
+  const inCorso = l.filter(x => x.statoAvanzamento > 0 && x.statoAvanzamento < 100).length;
+  const completate = l.filter(x => x.statoAvanzamento >= 100).length;
+  const inRitardo = l.filter(x => x.statoAvanzamento < x.previsioneAvanzamento - 5).length;
+  const budgetTot = l.reduce((s,x) => s + (Number(x.costoPrevisto)||0), 0);
+  const consuntivoTot = l.reduce((s,x) => s + (Number(x.costoEuro)||0), 0);
+
+  const today = todayISO();
+  const ordAttesa = o.filter(x => x.statoParziale !== 'completo').length;
+  const ordRitardo = o.filter(x => x.dataPrevista && x.dataPrevista < today && x.statoParziale !== 'completo').length;
+  const ordParziali = o.filter(x => x.statoParziale === 'parziale').length;
+
+  const oreSettimana = p.reduce((s,pers) => {
+    const start = startOfWeek(new Date());
+    const sum = (pers.log||[]).filter(l2 => new Date(l2.data) >= start).reduce((a,l2)=>a+Number(l2.ore||0),0);
+    return s + sum;
+  }, 0);
+
+  const now = new Date();
+  const last30 = toLocalISODate(new Date(now.getTime() - 30*86400000));
+  const evPos = ev.filter(x => x.tipo==='positivo' && x.data >= last30).length;
+  const evNeg = ev.filter(x => x.tipo==='negativo' && x.data >= last30).length;
+
+  const tra7giorni = toLocalISODate(new Date(now.getTime() + 7*86400000));
+  const avviiInRitardo = l.filter(x => !x.dataCompletamento && x.dataInizio && x.dataInizio < today && (!x.statoAvanzamento || x.statoAvanzamento === 0));
+  const avviiEntro7 = l.filter(x => !x.dataCompletamento && x.dataInizio && x.dataInizio >= today && x.dataInizio <= tra7giorni);
+  const avvisiAvvio = [...avviiInRitardo, ...avviiEntro7].sort((a,b) => (a.dataInizio||'').localeCompare(b.dataInizio||''));
+
+  const rischiAttivi = state.rischi.filter(r => r.stato !== 'accaduto' && r.stato !== 'chiuso');
+  const rischiAlti = rischiAttivi.filter(r => calcolaRischio(r).livello === 'Alto');
+
+  const totaleContrattiSal = state.contrattiSal.reduce((s,c) => s + prezzoPattuitoEffettivo(c), 0);
+  const totaleAutorizzatoSal = state.contrattiSal.reduce((s,c) => s + autorizzatoAttualeContratto(c), 0);
+  const totaleResiduoSal = totaleContrattiSal - totaleAutorizzatoSal;
+
+  const oreNonProduttiveTotali = state.attivitaOre.reduce((s,a) => s + Number(a.costoOre||0), 0);
+  const orePrevisteLavorazioniTotali = l.reduce((s,x) => s + Number(x.orePreviste||0), 0);
+  const percentualeOreNonProduttive = orePrevisteLavorazioniTotali > 0 ? Math.round((oreNonProduttiveTotali / orePrevisteLavorazioniTotali) * 100) : null;
+
+  const costiPerCategoria = (() => {
+    const gruppi = {};
+    l.forEach(x => {
+      const chiave = (x.categoria||'').trim() || 'Senza categoria';
+      if(!gruppi[chiave]) gruppi[chiave] = {nome: chiave, numero: 0, preventivo: 0, reale: 0};
+      gruppi[chiave].numero += 1;
+      gruppi[chiave].preventivo += Number(x.costoPrevisto||0);
+      gruppi[chiave].reale += Number(x.costoEuro||0);
+    });
+    return Object.values(gruppi).sort((a,b) => b.reale - a.reale);
+  })();
+
+  document.getElementById('content').innerHTML = `
+    <div class="toolbar">
+      <div><h2 class="section-title">Quadro generale</h2><p class="section-sub" style="margin-bottom:0;">Riepilogo sintetico dello stato del cantiere — seleziona una scheda per aprire la sezione dedicata.</p></div>
+      <button class="btn ghost" id="genera-report-btn">📄 Report settimanale</button>
+      <button class="btn ghost" id="genera-report-mensile-btn">📄 Report mensile</button>
+    </div>
+
+    <div class="grid-cards">
+      <div class="card ${inRitardo>0?'status-warn':'status-ok'}" data-goto="lavorazioni">
+        <div class="card-eyebrow">02 · LAVORAZIONI</div>
+        <div class="card-num">${l.length}</div>
+        <div class="card-label">${inCorso} in corso · ${completate} completate</div>
+        ${inRitardo>0 ? `<span class="card-flag flag-red">⚠ ${inRitardo} in ritardo</span>` : `<span class="card-flag flag-green">✓ avanzamento in linea</span>`}
+      </div>
+      <div class="card ${consuntivoTot > budgetTot?'status-warn':'status-ok'}" data-goto="lavorazioni">
+        <div class="card-eyebrow">02 · COSTI LAVORAZIONI</div>
+        <div class="card-num mono" style="font-size:28px;">${fmtEuro(consuntivoTot)}</div>
+        <div class="card-label">su budget previsto ${fmtEuro(budgetTot)}</div>
+        ${consuntivoTot > budgetTot ? `<span class="card-flag flag-red">⚠ sopra budget</span>` : `<span class="card-flag flag-green">✓ entro budget</span>`}
+      </div>
+      <div class="card ${ordRitardo>0?'status-warn':'status-ok'}" data-goto="ordini">
+        <div class="card-eyebrow">03 · ORDINI</div>
+        <div class="card-num">${o.length}</div>
+        <div class="card-label">${ordAttesa} non completati · ${ordParziali} parziali</div>
+        ${ordRitardo>0 ? `<span class="card-flag flag-red">⚠ ${ordRitardo} in ritardo</span>` : `<span class="card-flag flag-green">✓ nessun ritardo</span>`}
+      </div>
+      <div class="card status-info" data-goto="persone">
+        <div class="card-eyebrow">04 · PERSONE</div>
+        <div class="card-num">${p.length}</div>
+        <div class="card-label">${oreSettimana.toFixed(1)} ore registrate questa settimana</div>
+        <span class="card-flag flag-blue">manodopera</span>
+      </div>
+      <div class="card ${evNeg > evPos?'status-warn':'status-ok'}" data-goto="eventi">
+        <div class="card-eyebrow">05 · EVENTI (ULTIMI 30 GG)</div>
+        <div class="card-num">${ev.length}</div>
+        <div class="card-label">${evPos} positivi · ${evNeg} negativi</div>
+        ${evNeg > evPos ? `<span class="card-flag flag-red">⚠ attenzione</span>` : `<span class="card-flag flag-green">✓ clima positivo</span>`}
+      </div>
+      <div class="card status-info" data-goto="calendario">
+        <div class="card-eyebrow">01 · CALENDARIO</div>
+        <div class="card-num">${countUpcoming()}</div>
+        <div class="card-label">eventi nei prossimi 7 giorni</div>
+        <span class="card-flag flag-orange">→ vai al calendario</span>
+      </div>
+      <div class="card ${rischiAlti.length>0?'status-warn':'status-ok'}" data-goto="rischi">
+        <div class="card-eyebrow">07 · RISCHI</div>
+        <div class="card-num">${rischiAttivi.length}</div>
+        <div class="card-label">rischi attivi monitorati</div>
+        ${rischiAlti.length>0 ? `<span class="card-flag flag-red">⚠ ${rischiAlti.length} ad alto rischio</span>` : `<span class="card-flag flag-green">✓ nessun rischio alto</span>`}
+      </div>
+      <div class="card status-info" data-goto="sal">
+        <div class="card-eyebrow">08 · SAL FORNITORI</div>
+        <div class="card-num mono" style="font-size:22px;">${fmtEuro(totaleResiduoSal)}</div>
+        <div class="card-label">residuo da autorizzare su ${fmtEuro(totaleContrattiSal)} totali</div>
+        <span class="card-flag flag-blue">${state.contrattiSal.length} contratti</span>
+      </div>
+      <div class="card status-info" data-goto="lavorazioni">
+        <div class="card-eyebrow">ORE NON PRODUTTIVE</div>
+        <div class="card-num">${oreNonProduttiveTotali}h</div>
+        <div class="card-label">${percentualeOreNonProduttive!==null ? `${percentualeOreNonProduttive}% delle ${orePrevisteLavorazioniTotali}h previste lavorazioni` : 'pulizie, trasporti, magazzino, riunioni...'}</div>
+        <span class="card-flag flag-blue">${state.attivitaOre.length} attività tracciate</span>
+      </div>
+    </div>
+
+    ${avvisiAvvio.length>0 ? `
+    <div class="subsection-title">Avvisi avvio lavorazioni</div>
+    <table><thead><tr><th>Lavorazione</th><th>Data inizio</th><th>Stato</th></tr></thead>
+      <tbody>${avvisiAvvio.map(x => {
+        const inRitardoAvvio = x.dataInizio < today;
+        return `<tr>
+          <td>${esc(x.nome)}</td>
+          <td class="mono">${fmtDate(x.dataInizio)}</td>
+          <td>${inRitardoAvvio ? `<span class="badge badge-red">⚠ da avviare, in ritardo</span>` : `<span class="badge badge-orange">in partenza tra ${Math.round((new Date(x.dataInizio) - new Date(today))/86400000)} giorni</span>`}</td>
+        </tr>`;
+      }).join('')}</tbody></table>
+    ` : ''}
+
+    ${costiPerCategoria.length>1 || (costiPerCategoria.length===1 && costiPerCategoria[0].nome!=='Senza categoria') ? `
+    <div class="subsection-title">Costi per categoria / squadra</div>
+    <table><thead><tr><th>Categoria</th><th>Lavorazioni</th><th>Preventivo</th><th>Reale</th></tr></thead>
+      <tbody>${costiPerCategoria.map(c => `<tr>
+        <td>${esc(c.nome)}</td>
+        <td class="mono">${c.numero}</td>
+        <td class="mono">${fmtEuro(c.preventivo)}</td>
+        <td class="mono">${fmtEuro(c.reale)}${c.reale > c.preventivo && c.preventivo>0 ? ` <span class="badge badge-red">sopra</span>` : ''}</td>
+      </tr>`).join('')}</tbody></table>
+    ` : ''}
+
+    <div class="subsection-title">Lavorazioni con maggiore scostamento</div>
+    ${renderTopDeviationTable()}
+  `;
+  document.querySelectorAll('[data-goto]').forEach(c => {
+    c.onclick = () => { state.section = c.dataset.goto; renderAll(); };
+  });
+  document.getElementById('genera-report-btn').onclick = () => apriModaleReportSettimanale();
+  document.getElementById('genera-report-mensile-btn').onclick = () => apriModaleReportMensile();
+}
+function countUpcoming(){
+  const now = new Date();
+  const end = new Date(now.getTime() + 7*86400000);
+  let count = 0;
+  for(let d = new Date(now); d <= end; d.setDate(d.getDate()+1)){
+    count += getEntriesForDate(toLocalISODate(d)).length;
+  }
+  return count;
+}
+function renderTopDeviationTable(){
+  const rows = [...state.lavorazioni]
+    .map(x => ({...x, scostamento: (x.statoAvanzamento - x.previsioneAvanzamento)}))
+    .sort((a,b) => a.scostamento - b.scostamento)
+    .slice(0,5);
+  if(rows.length===0) return `<div class="empty-state">Nessuna lavorazione inserita ancora.</div>`;
+  return `<div class="table-scroll"><table><thead><tr><th>Lavorazione</th><th>Avanzamento</th><th>Previsto</th><th>Scostamento</th></tr></thead>
+    <tbody>${rows.map(r => `<tr>
+      <td>${esc(r.nome)}</td>
+      <td class="mono">${r.statoAvanzamento}%</td>
+      <td class="mono">${r.previsioneAvanzamento}%</td>
+      <td>${r.scostamento < -5 ? `<span class="badge badge-red">${r.scostamento.toFixed(0)}%</span>` : r.scostamento > 5 ? `<span class="badge badge-green">+${r.scostamento.toFixed(0)}%</span>` : `<span class="badge badge-gray">${r.scostamento.toFixed(0)}%</span>`}</td>
+    </tr>`).join('')}</tbody></table></div>`;
+}
+
+/* ============ LAVORAZIONI ============ */
+function apriModificaCampo(oggetto, campo, label, tipo, extra, alSalvare){
+  extra = extra || {};
+  openModal({
+    title: label,
+    values: {valore: oggetto[campo]},
+    fields: [Object.assign({name:'valore', label, type:tipo}, extra)],
+    submitLabel: 'Salva',
+    onSubmit: (data) => {
+      oggetto[campo] = data.valore;
+      persist();
+      if(alSalvare) alSalvare();
+    }
+  });
+}
+function renderLavorazioni(){
+  const scrollPrecedente = catturaScrollOrizzontale();
+  const categorieDisponibili = [...new Set(state.lavorazioni.map(r => (r.categoria||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const passaFiltro = r => !state.lavorazioniFiltroCategoria || (r.categoria||'').trim() === state.lavorazioniFiltroCategoria;
+  const aperte = state.lavorazioni.filter(r => !r.dataCompletamento).filter(passaFiltro);
+  const completate = state.lavorazioni.filter(r => r.dataCompletamento).filter(passaFiltro)
+    .sort((a,b) => (b.dataCompletamento||'').localeCompare(a.dataCompletamento||''));
+  const attivitaDaFare = (state.attivitaVarie||[]).filter(a => !a.fatto);
+  const attivitaCompletate = (state.attivitaVarie||[]).filter(a => a.fatto);
+
+  document.getElementById('content').innerHTML = `
+    <div class="toolbar">
+      <div><h2 class="section-title">Lavorazioni</h2><p class="section-sub">Avanzamento fisico, costi e ore (previste / effettive) di ogni lavorazione. Le lavorazioni completate si archiviano a scomparsa qui sotto.</p></div>
+      <button class="btn" id="add-lavorazione">+ Nuova lavorazione</button>
+    </div>
+    ${categorieDisponibili.length>0 ? `
+    <div class="toolbar" style="gap:8px;">
+      <select id="filtro-categoria-lavorazioni" style="padding:9px 10px;border:1px solid var(--line);background:var(--paper);font-family:'Inter',sans-serif;font-size:13px;color:var(--ink);">
+        <option value="">Tutte le categorie/squadre</option>
+        ${categorieDisponibili.map(c => `<option value="${esc(c)}" ${state.lavorazioniFiltroCategoria===c?'selected':''}>${esc(c)}</option>`).join('')}
+      </select>
+    </div>` : ''}
+    ${aperte.length===0 ? emptyState('Nessuna lavorazione aperta', 'Aggiungi una lavorazione per iniziare a tracciare avanzamento, costi e ore.') : `
+    <div class="table-scroll"><table class="tabella-compatta"><thead><tr>
+      <th>Nome</th><th>Avanzamento</th><th>Costi</th><th>Ore</th><th>Date</th><th></th>
+    </tr></thead>
+    <tbody>${aperte.map(r => renderLavorazioneRow(r)).join('')}</tbody></table></div>`}
+
+    ${completate.length>0 ? `
+    <details id="dettaglio-lavorazioni-completate" style="margin-top:18px;" ${uiDettagliAperti['lavorazioni-completate']?'open':''}>
+      <summary style="cursor:pointer;font-family:'Oswald',sans-serif;letter-spacing:0.04em;padding:10px 0;color:var(--muted);font-size:13px;">Lavorazioni completate (${completate.length}) — clicca per mostrare/nascondere</summary>
+      <div class="table-scroll" style="margin-top:10px;"><table class="tabella-compatta"><thead><tr>
+        <th>Nome</th><th>Avanzamento</th><th>Costi</th><th>Ore</th><th>Date</th><th></th>
+      </tr></thead>
+      <tbody>${completate.map(r => renderLavorazioneRow(r)).join('')}</tbody></table></div>
+    </details>` : ''}
+
+    <div class="subsection-title" style="margin-top:32px;">Attività (non produttive)</div>
+    <p class="section-sub" style="margin-top:-6px;">Ore su pulizie, trasporti, gestione magazzino, riunioni e altro non quotato nel computo metrico. Nessun budget o data, solo il totale ore.</p>
+    <div class="toolbar" style="gap:8px;">
+      <input type="text" id="nuova-attivita-ore-testo" placeholder="Nome nuova attività (es. Pulizie cantiere)…" style="flex:1;padding:9px 10px;border:1px solid var(--line);background:var(--paper);font-family:'Inter',sans-serif;font-size:13px;color:var(--ink);">
+      <button class="btn" id="aggiungi-attivita-ore-btn">+ Aggiungi</button>
+    </div>
+    ${state.attivitaOre.length===0 ? `<div style="color:var(--muted);font-size:13px;padding:14px 0;">Nessuna attività non produttiva registrata.</div>` : `
+    <div id="lista-attivita-ore">
+      ${[...state.attivitaOre].sort((a,b)=>Number(b.costoOre||0)-Number(a.costoOre||0)).map(a => `
+        <div class="day-entry" style="align-items:center;">
+          <div>${esc(a.nome)} <span class="mono" style="color:var(--muted);font-size:12px;">— ${Number(a.costoOre||0)} h totali</span></div>
+          <div class="row-actions">
+            <button class="icon-btn" id="rinomina-attivita-ore-${a.id}">Rinomina</button>
+            <button class="icon-btn" id="del-attivita-ore-${a.id}">Elimina</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>`}
+
+    <div class="subsection-title" style="margin-top:32px;">Snag list</div>
+    <p class="section-sub" style="margin-top:-6px;">Piccoli compiti senza scadenza né budget: da fare quando capita un momento libero.</p>
+    <div class="toolbar" style="gap:8px;">
+      <input type="text" id="nuova-attivita-testo" placeholder="Scrivi una cosa da fare e premi Invio…" style="flex:1;padding:9px 10px;border:1px solid var(--line);background:var(--paper);font-family:'Inter',sans-serif;font-size:13px;color:var(--ink);">
+      <button class="btn" id="aggiungi-attivita-btn">+ Aggiungi</button>
+    </div>
+    ${attivitaDaFare.length===0 ? `<div style="color:var(--muted);font-size:13px;padding:14px 0;">Nessuna attività da fare in lista.</div>` : `
+    <div id="lista-attivita-varie">
+      ${attivitaDaFare.map(a => `
+        <div class="day-entry" style="align-items:center;">
+          <label style="display:flex;align-items:center;gap:10px;flex:1;cursor:pointer;">
+            <input type="checkbox" data-toggle-attivita="${a.id}" style="width:16px;height:16px;">
+            <span>${esc(a.testo)}</span>
+          </label>
+          <button class="icon-btn" ${a.fotoUrl ? `data-vedi-foto-attivita="${a.id}"` : `data-foto-attivita="${a.id}"`}>${a.fotoUrl ? '🖼 Vedi foto' : '📷 Foto'}</button>
+          <button class="icon-btn" data-elimina-attivita="${a.id}">Elimina</button>
+        </div>
+      `).join('')}
+    </div>`}
+
+    ${attivitaCompletate.length>0 ? `
+    <details id="dettaglio-attivita-completate" style="margin-top:14px;" ${uiDettagliAperti['attivita-completate']?'open':''}>
+      <summary style="cursor:pointer;font-family:'Oswald',sans-serif;letter-spacing:0.04em;padding:10px 0;color:var(--muted);font-size:13px;">Attività completate (${attivitaCompletate.length}) — clicca per mostrare/nascondere</summary>
+      <div style="margin-top:8px;">
+        ${attivitaCompletate.map(a => `
+          <div class="day-entry" style="align-items:center;">
+            <label style="display:flex;align-items:center;gap:10px;flex:1;cursor:pointer;color:var(--muted);text-decoration:line-through;">
+              <input type="checkbox" data-toggle-attivita="${a.id}" checked style="width:16px;height:16px;">
+              <span>${esc(a.testo)}</span>
+            </label>
+            <button class="icon-btn" ${a.fotoUrl ? `data-vedi-foto-attivita="${a.id}"` : `data-foto-attivita="${a.id}"`}>${a.fotoUrl ? '🖼 Vedi foto' : '📷 Foto'}</button>
+            <button class="icon-btn" data-elimina-attivita="${a.id}">Elimina</button>
+          </div>
+        `).join('')}
+      </div>
+    </details>` : ''}
+  `;
+  ripristinaScrollOrizzontale(scrollPrecedente);
+  document.getElementById('add-lavorazione').onclick = () => openLavorazioneModal();
+  const filtroCategoriaLav = document.getElementById('filtro-categoria-lavorazioni');
+  if(filtroCategoriaLav) filtroCategoriaLav.onchange = (e) => { state.lavorazioniFiltroCategoria = e.target.value; renderLavorazioni(); };
+  const dettLavCompletate = document.getElementById('dettaglio-lavorazioni-completate');
+  if(dettLavCompletate) dettLavCompletate.addEventListener('toggle', function(){ uiDettagliAperti['lavorazioni-completate'] = this.open; });
+  const dettAttCompletate = document.getElementById('dettaglio-attivita-completate');
+  if(dettAttCompletate) dettAttCompletate.addEventListener('toggle', function(){ uiDettagliAperti['attivita-completate'] = this.open; });
+  const inputAttivitaOre = document.getElementById('nuova-attivita-ore-testo');
+  const aggiungiAttivitaOreBtn = document.getElementById('aggiungi-attivita-ore-btn');
+  function aggiungiAttivitaOreDaInput(){
+    const nome = inputAttivitaOre.value.trim();
+    if(!nome) return;
+    state.attivitaOre.push({id:uid(), nome, costoOre:0});
+    persist();
+    renderLavorazioni();
+  }
+  if(aggiungiAttivitaOreBtn) aggiungiAttivitaOreBtn.onclick = aggiungiAttivitaOreDaInput;
+  if(inputAttivitaOre){
+    inputAttivitaOre.onkeydown = (e) => { if(e.key === 'Enter'){ e.preventDefault(); aggiungiAttivitaOreDaInput(); } };
+  }
+  state.attivitaOre.forEach(a => {
+    const rinominaBtn = document.getElementById('rinomina-attivita-ore-'+a.id);
+    const delBtn = document.getElementById('del-attivita-ore-'+a.id);
+    if(rinominaBtn) rinominaBtn.onclick = () => apriModificaCampo(a, 'nome', 'Nome attività', 'text', {required:true}, renderLavorazioni);
+    if(delBtn) delBtn.onclick = () => { if(confirm(`Eliminare l'attività "${a.nome}"? Lo storico ore già registrato resterà visibile ma senza collegamento.`)){ state.attivitaOre = state.attivitaOre.filter(x=>x.id!==a.id); persist(); renderLavorazioni(); } };
+  });
+  state.lavorazioni.forEach(r => {
+    const editBtn = document.getElementById('edit-lav-'+r.id);
+    const delBtn = document.getElementById('del-lav-'+r.id);
+    const completaBtn = document.getElementById('completa-lav-'+r.id);
+    const riapriBtn = document.getElementById('riapri-lav-'+r.id);
+    const fotoBtn = document.getElementById('foto-lav-'+r.id);
+    const vediFotoBtn = document.getElementById('vedi-foto-lav-'+r.id);
+    const menoBtn = document.getElementById('meno-avanzamento-'+r.id);
+    const piuBtn = document.getElementById('piu-avanzamento-'+r.id);
+    if(editBtn) editBtn.onclick = () => openLavorazioneModal(r);
+    if(delBtn) delBtn.onclick = () => { state.lavorazioni = state.lavorazioni.filter(x=>x.id!==r.id); persist(); renderAll(); };
+    if(completaBtn) completaBtn.onclick = () => { r.dataCompletamento = todayISO(); r.statoAvanzamento = 100; persist(); renderLavorazioni(); };
+    if(riapriBtn) riapriBtn.onclick = () => { r.dataCompletamento = null; persist(); renderLavorazioni(); };
+    if(fotoBtn) fotoBtn.onclick = () => scattaFotoLavorazione(r);
+    if(vediFotoBtn) vediFotoBtn.onclick = () => window.open(r.cartellaFotoUrl, '_blank');
+    if(menoBtn) menoBtn.onclick = () => { r.statoAvanzamento = clamp((Number(r.statoAvanzamento)||0) - 5, 0, 100); persist(); renderLavorazioni(); };
+    if(piuBtn) piuBtn.onclick = () => { r.statoAvanzamento = clamp((Number(r.statoAvanzamento)||0) + 5, 0, 100); persist(); renderLavorazioni(); };
+    const campiClic = [
+      {id:`campo-costoPrevisto-${r.id}`, campo:'costoPrevisto', label:'Costo preventivo (€)', tipo:'number', extra:{step:'0.01'}},
+      {id:`campo-previsioneCosto-${r.id}`, campo:'previsioneCosto', label:'Costo target — previsione a completamento (€)', tipo:'number', extra:{step:'0.01'}},
+      {id:`campo-costoEuro-${r.id}`, campo:'costoEuro', label:'Costo effettivo (€)', tipo:'number', extra:{step:'0.01'}},
+      {id:`campo-orePreviste-${r.id}`, campo:'orePreviste', label:'Ore preventivate', tipo:'number', extra:{step:'0.5'}},
+      {id:`campo-orePrevisione-${r.id}`, campo:'orePrevisione', label:'Ore target — previsione a completamento', tipo:'number', extra:{step:'0.5'}},
+      {id:`campo-costoOre-${r.id}`, campo:'costoOre', label:'Ore effettive impiegate', tipo:'number', extra:{step:'0.5'}},
+      {id:`campo-dataInizio-${r.id}`, campo:'dataInizio', label:'Data inizio', tipo:'date', extra:{}},
+      {id:`campo-scadenzaPrevista-${r.id}`, campo:'scadenzaPrevista', label:'Data stima fine', tipo:'date', extra:{}},
+      {id:`campo-dataCompletamento-${r.id}`, campo:'dataCompletamento', label:'Data fine effettiva', tipo:'date', extra:{}},
+      {id:`campo-previsioneAvanzamento-${r.id}`, campo:'previsioneAvanzamento', label:'Previsione avanzamento a oggi (%)', tipo:'number', extra:{step:'1'}},
+    ];
+    campiClic.forEach(c => {
+      const el = document.getElementById(c.id);
+      if(el) el.onclick = () => apriModificaCampo(r, c.campo, c.label, c.tipo, c.extra, renderLavorazioni);
+    });
+  });
+  const inputAttivita = document.getElementById('nuova-attivita-testo');
+  const aggiungiAttivitaBtn = document.getElementById('aggiungi-attivita-btn');
+  function aggiungiAttivitaDaInput(){
+    const testo = inputAttivita.value.trim();
+    if(!testo) return;
+    state.attivitaVarie.push({id:uid(), testo, fatto:false});
+    persist();
+    renderLavorazioni();
+  }
+  if(aggiungiAttivitaBtn) aggiungiAttivitaBtn.onclick = aggiungiAttivitaDaInput;
+  if(inputAttivita){
+    inputAttivita.onkeydown = (e) => { if(e.key === 'Enter'){ e.preventDefault(); aggiungiAttivitaDaInput(); } };
+  }
+  document.querySelectorAll('[data-toggle-attivita]').forEach(cb => {
+    cb.onchange = () => {
+      const item = state.attivitaVarie.find(a => a.id === cb.dataset.toggleAttivita);
+      if(item){ item.fatto = cb.checked; persist(); renderLavorazioni(); }
+    };
+  });
+  document.querySelectorAll('[data-elimina-attivita]').forEach(btn => {
+    btn.onclick = () => {
+      state.attivitaVarie = state.attivitaVarie.filter(a => a.id !== btn.dataset.eliminaAttivita);
+      persist();
+      renderLavorazioni();
+    };
+  });
+  document.querySelectorAll('[data-foto-attivita]').forEach(btn => {
+    btn.onclick = () => {
+      const item = state.attivitaVarie.find(a => a.id === btn.dataset.fotoAttivita);
+      if(item) scattaFotoSnag(item);
+    };
+  });
+  document.querySelectorAll('[data-vedi-foto-attivita]').forEach(btn => {
+    btn.onclick = () => {
+      const item = state.attivitaVarie.find(a => a.id === btn.dataset.vediFotoAttivita);
+      if(item && item.fotoUrl) window.open(item.fotoUrl, '_blank');
+    };
+  });
+}
+async function scattaFotoLavorazione(r){
+  const file = await apriFotocamera();
+  if(!file) return;
+  caricamentiFotoInCorso++;
+  aggiornaIndicatoreCaricamentoFoto();
+  try{
+    const base64 = await ridimensionaImmagine(file);
+    const risposta = await chiamaAzionePost('uploadFotoLavorazione', {
+      cantiere: state.nomeCantiereAttivo || 'Cantiere',
+      lavorazione: r.nome,
+      percentuale: r.statoAvanzamento,
+      imageBase64: base64,
+      mimeType: 'image/jpeg',
+    });
+    r.numeroFoto = (r.numeroFoto || 0) + 1;
+    r.cartellaFotoUrl = risposta.cartellaUrl;
+    persist();
+    if(state.section === 'lavorazioni') renderLavorazioni();
+    mostraToast('📷 Foto caricata ✓');
+  }catch(e){
+    alert('Errore nel caricamento della foto: ' + e.message);
+  }finally{
+    caricamentiFotoInCorso--;
+    aggiornaIndicatoreCaricamentoFoto();
+  }
+}
+async function scattaFotoSnag(item){
+  const file = await apriFotocamera();
+  if(!file) return;
+  caricamentiFotoInCorso++;
+  aggiornaIndicatoreCaricamentoFoto();
+  try{
+    const base64 = await ridimensionaImmagine(file);
+    const risposta = await chiamaAzionePost('uploadFotoSnag', {
+      cantiere: state.nomeCantiereAttivo || 'Cantiere',
+      voce: item.testo,
+      imageBase64: base64,
+      mimeType: 'image/jpeg',
+      vecchioFileId: item.fotoFileId || null,
+    });
+    item.fotoUrl = risposta.fileUrl;
+    item.fotoFileId = risposta.fileId;
+    persist();
+    if(state.section === 'lavorazioni') renderLavorazioni();
+    mostraToast('📷 Foto caricata ✓');
+  }catch(e){
+    alert('Errore nel caricamento della foto: ' + e.message);
+  }finally{
+    caricamentiFotoInCorso--;
+    aggiornaIndicatoreCaricamentoFoto();
+  }
+}
+function renderLavorazioneRow(r){
+  const completata = !!r.dataCompletamento;
+  const scostamento = (r.statoAvanzamento||0) - (r.previsioneAvanzamento||0);
+  const badge = scostamento < -5 ? `<span class="badge badge-red">in ritardo</span>` : scostamento > 5 ? `<span class="badge badge-green">in anticipo</span>` : `<span class="badge badge-gray">in linea</span>`;
+  const rigaStile = completata ? 'style="opacity:0.6;"' : '';
+  const today = todayISO();
+
+  const intestazioneGruppo = (testo) => `<div style="font-size:9px;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:1px;line-height:1.3;">${testo}</div>`;
+  const rigaCampo = (valore, id, label, formatta) => {
+    const classe = valore ? 'valore-cliccabile' : 'valore-vuoto';
+    const testo = valore ? formatta(valore) : '+ imposta';
+    return `<tr>
+      <td style="padding:0 8px 1px 0;border:none;color:var(--muted);white-space:nowrap;font-size:12px;line-height:1.3;">${label}</td>
+      <td class="${classe}" id="${id}" style="padding:0 0 1px 0;border:none;white-space:nowrap;line-height:1.3;">${testo}</td>
+    </tr>`;
+  };
+
+  // --- Costi: preventivo / stima (previsione EAC) / reale ---
+  const hannoCosti = !!(r.costoPrevisto || r.previsioneCosto || r.costoEuro);
+  let costBadge = '';
+  if(r.previsioneCosto || r.costoPrevisto){
+    costBadge = (r.previsioneCosto||0) > (r.costoPrevisto||0) ? `<span class="badge badge-red">sopra budget</span>` : `<span class="badge badge-green">entro budget</span>`;
+  }
+  const contenutoCosti = hannoCosti ? `
+      ${intestazioneGruppo('Costi')}
+      <table class="tabella-compatta" style="border-collapse:collapse;">
+        ${rigaCampo(r.costoPrevisto, `campo-costoPrevisto-${r.id}`, 'Preventivo', fmtEuro)}
+        ${rigaCampo(r.previsioneCosto, `campo-previsioneCosto-${r.id}`, 'Stima', fmtEuro)}
+        ${rigaCampo(r.costoEuro, `campo-costoEuro-${r.id}`, 'Reale', fmtEuro)}
+      </table>
+      <div style="margin-top:1px;">${costBadge}</div>
+  ` : '';
+
+  // --- Ore: preventivo / stima / reali ---
+  const orePreviste = Number(r.orePreviste||0);
+  const oreEffettive = Number(r.costoOre||0);
+  let oreBadge = '';
+  if(orePreviste > 0 || oreEffettive > 0){
+    oreBadge = oreEffettive > orePreviste ? `<span class="badge badge-red">sopra previste</span>` : `<span class="badge badge-green">entro previste</span>`;
+  }
+  const contenutoOre = `
+      ${intestazioneGruppo('Ore')}
+      <table class="tabella-compatta" style="border-collapse:collapse;">
+        ${rigaCampo(r.orePreviste, `campo-orePreviste-${r.id}`, 'Preventivo', v => v+'h')}
+        ${rigaCampo(r.orePrevisione, `campo-orePrevisione-${r.id}`, 'Stima', v => v+'h')}
+        ${rigaCampo(r.costoOre, `campo-costoOre-${r.id}`, 'Reali', v => v+'h')}
+      </table>
+      <div style="margin-top:1px;">${oreBadge}</div>
+  `;
+
+  // --- Date: inizio / termine / fine (tabella 2 colonne x 3 righe) ---
+  let tempoBadge = '';
+  if(!completata && r.scadenzaPrevista){
+    const giorni = Math.round((new Date(r.scadenzaPrevista) - new Date(today)) / 86400000);
+    tempoBadge = giorni < 0 ? `<span class="badge badge-red">⚠ scaduta da ${Math.abs(giorni)} gg</span>` : `<span class="badge badge-green">${giorni} gg al termine</span>`;
+  }
+  const contenutoDate = `
+      ${intestazioneGruppo('Date')}
+      <table class="tabella-compatta" style="border-collapse:collapse;">
+        ${rigaCampo(r.dataInizio, `campo-dataInizio-${r.id}`, 'Inizio', fmtDataBreve)}
+        ${rigaCampo(r.scadenzaPrevista, `campo-scadenzaPrevista-${r.id}`, 'Termine', fmtDataBreve)}
+        ${completata
+          ? `<tr><td style="padding:0 8px 1px 0;border:none;color:var(--muted);white-space:nowrap;font-size:12px;line-height:1.3;">Fine</td><td class="valore-cliccabile" id="campo-dataCompletamento-${r.id}" style="padding:0 0 1px 0;border:none;white-space:nowrap;line-height:1.3;">✓ ${fmtDataBreve(r.dataCompletamento)}</td></tr>`
+          : rigaCampo(r.dataCompletamento, `campo-dataCompletamento-${r.id}`, 'Fine', fmtDataBreve)}
+      </table>
+      <div style="margin-top:1px;">${tempoBadge}</div>
+  `;
+
+  return `<tr ${rigaStile} id="row-lav-${r.id}">
+    <td style="vertical-align:top;"><strong>${esc(r.nome)}</strong>${r.categoria?`<div style="font-size:11px;color:var(--muted);">${esc(r.categoria)}</div>`:''}${r.contrattoSalId ? (() => { const c = state.contrattiSal.find(x=>x.id===r.contrattoSalId); return c ? `<div style="font-size:11px;color:var(--blue);">SAL: ${esc(c.fornitore)}</div>` : ''; })() : ''}${r.note ? `<div style="color:var(--muted);font-size:11px;">${esc(r.note)}</div>`:''}</td>
+    <td style="min-width:180px;vertical-align:top;">
+      <div class="bar-track"><div class="bar-fill" style="width:${clamp(r.statoAvanzamento,0,100)}%;"></div><div class="bar-marker" style="left:${clamp(r.previsioneAvanzamento,0,100)}%;"></div></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;">
+        <div class="stepper">
+          <button id="meno-avanzamento-${r.id}">−</button>
+          <span class="mono" style="min-width:32px;text-align:center;display:inline-block;">${r.statoAvanzamento||0}%</span>
+          <button id="piu-avanzamento-${r.id}">+</button>
+        </div>
+        <div class="valore-cliccabile mono" id="campo-previsioneAvanzamento-${r.id}" style="font-size:11px;">previsto: ${r.previsioneAvanzamento||0}%</div>
+      </div>
+      <div style="margin-top:4px;">${badge}</div>
+    </td>
+    <td class="mono" style="vertical-align:top;padding-top:6px;padding-bottom:6px;${hannoCosti ? '' : 'padding-left:2px;padding-right:2px;'}">${contenutoCosti}</td>
+    <td class="mono" style="vertical-align:top;padding-top:6px;padding-bottom:6px;">${contenutoOre}</td>
+    <td class="mono" style="vertical-align:top;padding-top:6px;padding-bottom:6px;">${contenutoDate}</td>
+    <td style="vertical-align:top;"><div class="row-actions">
+      ${completata ? `<button class="icon-btn" id="riapri-lav-${r.id}">Riapri</button>` : `<button class="icon-btn" id="completa-lav-${r.id}">✓ Completa</button>`}
+      <button class="icon-btn" id="foto-lav-${r.id}">📷 Foto</button>
+      ${r.numeroFoto>0 ? `<button class="icon-btn" id="vedi-foto-lav-${r.id}">🖼 Vedi foto (${r.numeroFoto})</button>` : ''}
+      <button class="icon-btn" id="edit-lav-${r.id}">Modifica</button><button class="icon-btn" id="del-lav-${r.id}">Elimina</button>
+    </div></td>
+  </tr>`;
+}
+function openLavorazioneModal(existing){
+  openModal({
+    title: existing ? 'Modifica lavorazione' : 'Nuova lavorazione',
+    values: existing || {statoAvanzamento:0, previsioneAvanzamento:0},
+    fields: [
+      {name:'nome', label:'Nome lavorazione', type:'text', required:true},
+      {name:'categoria', label:'Categoria / squadra / appaltatore (opzionale)', type:'text'},
+      {name:'contrattoSalId', label:'Contratto SAL collegato (opzionale)', type:'select', options: [
+        {value:'', label:'— Nessuno —'},
+        ...state.contrattiSal.map(c => ({value:c.id, label:c.fornitore})),
+      ]},
+      {name:'prezzoSalPattuito', label:'Prezzo pattuito per questa lavorazione nel SAL (€, opzionale)', type:'number', step:'0.01'},
+      {name:'costoPrevisto', label:'Costo previsto (€)', type:'number', step:'0.01'},
+      {name:'statoAvanzamento', label:'Stato avanzamento reale (%)', type:'number', step:'1'},
+      {name:'previsioneAvanzamento', label:'Previsione avanzamento a oggi (%)', type:'number', step:'1'},
+      {name:'previsioneCosto', label:'Previsione costo a completamento (€)', type:'number', step:'0.01'},
+      {name:'orePreviste', label:'Ore previste (preventivo)', type:'number', step:'0.5'},
+      {name:'orePrevisione', label:'Ore target — previsione a completamento', type:'number', step:'0.5'},
+      {name:'costoOre', label:'Ore effettive impiegate', type:'number', step:'0.5'},
+      {name:'costoEuro', label:'Costo consuntivo — €', type:'number', step:'0.01'},
+      {name:'dataInizio', label:'Data inizio', type:'date'},
+      {name:'scadenzaPrevista', label:'Data fine prevista', type:'date'},
+      {name:'dataCompletamento', label:'Data completamento (lascia vuoto se ancora aperta)', type:'date'},
+      {name:'note', label:'Note', type:'textarea'},
+    ],
+    onSubmit: (data) => {
+      if(existing){
+        Object.assign(existing, data);
+      } else {
+        state.lavorazioni.push({id:uid(), ...data});
+      }
+      persist(); renderAll();
+    }
+  });
+}
+
+/* ============ ORDINI ============ */
+const STATO_ORDINE = [
+  {value:'in_attesa', label:'In attesa'},
+  {value:'parziale', label:'Parziale'},
+  {value:'completo', label:'Completo'},
+];
+function renderOrdini(){
+  const scrollPrecedente = catturaScrollOrizzontale();
+  const aperti = state.ordini.filter(r => r.statoParziale !== 'completo');
+  const completati = state.ordini.filter(r => r.statoParziale === 'completo')
+    .sort((a,b) => (b.dataEffettiva||'').localeCompare(a.dataEffettiva||''));
+  const fornitori = [...new Set(state.materialiDaOrdinare.map(m => (m.fornitore||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const materialiFiltrati = state.materialiDaOrdinare
+    .filter(m => !state.materialiFiltroFornitore || (m.fornitore||'').trim() === state.materialiFiltroFornitore)
+    .sort((a,b) => {
+      const cd = (a.descrizione||'').localeCompare(b.descrizione||'');
+      if(cd !== 0) return cd;
+      return (a.misura||'').localeCompare(b.misura||'');
+    });
+  document.getElementById('content').innerHTML = `
+    <div class="toolbar">
+      <div><h2 class="section-title">Ordini</h2><p class="section-sub">Date di ordine, consegna prevista ed effettiva, con stato parziale ed eventuali note. Gli ordini completati si archiviano a scomparsa qui sotto.</p></div>
+      <button class="btn" id="add-ordine">+ Nuovo ordine</button>
+    </div>
+    ${aperti.length===0 ? emptyState('Nessun ordine aperto', 'Aggiungi un ordine per iniziare a monitorarne le consegne.') : `
+    <div class="table-scroll"><table><thead><tr><th>Ordine</th><th>Data ordine</th><th>Prevista</th><th>Effettiva</th><th>Stato</th><th>Commenti</th><th></th></tr></thead>
+    <tbody>${aperti.map(r => renderOrdineRow(r)).join('')}</tbody></table></div>`}
+
+    ${completati.length>0 ? `
+    <details id="dettaglio-ordini-completati" style="margin-top:18px;" ${uiDettagliAperti['ordini-completati']?'open':''}>
+      <summary style="cursor:pointer;font-family:'Oswald',sans-serif;letter-spacing:0.04em;padding:10px 0;color:var(--muted);font-size:13px;">Ordini completati (${completati.length}) — clicca per mostrare/nascondere</summary>
+      <div class="table-scroll" style="margin-top:10px;"><table><thead><tr><th>Ordine</th><th>Data ordine</th><th>Prevista</th><th>Effettiva</th><th>Stato</th><th>Commenti</th><th></th></tr></thead>
+      <tbody>${completati.map(r => renderOrdineRow(r)).join('')}</tbody></table></div>
+    </details>` : ''}
+
+    <details id="dettaglio-materiali" style="margin-top:32px;" ${uiDettagliAperti['materiali']?'open':''}>
+      <summary style="cursor:pointer;font-family:'Oswald',sans-serif;letter-spacing:0.04em;padding:10px 0;color:var(--muted);font-size:13px;">Materiali da ordinare (${state.materialiDaOrdinare.length}) — clicca per mostrare/nascondere</summary>
+      <div style="margin-top:10px;">
+        <p class="section-sub" style="margin-top:-4px;">Elenco unico in ordine alfabetico di descrizione.</p>
+        <div class="toolbar" style="gap:8px;flex-wrap:wrap;">
+          <select id="filtro-fornitore-materiali" style="padding:9px 10px;border:1px solid var(--line);background:var(--paper);font-family:'Inter',sans-serif;font-size:13px;color:var(--ink);">
+            <option value="">Tutti i fornitori</option>
+            ${fornitori.map(f => `<option value="${esc(f)}" ${state.materialiFiltroFornitore===f?'selected':''}>${esc(f)}</option>`).join('')}
+          </select>
+          <button class="btn ghost" id="manda-ordine-btn">📦 Manda ordine</button>
+          <button class="btn" id="add-materiale">+ Nuovo materiale</button>
+        </div>
+        ${materialiFiltrati.length===0 ? emptyState('Nessun materiale in lista', 'Aggiungi un materiale da ordinare, con o senza fornitore.') : `
+        <div id="lista-materiali">
+          ${materialiFiltrati.map(m => {
+            const parti = [m.numero, m.descrizione, m.misura].filter(Boolean).join(' — ');
+            const conFornitore = m.fornitore ? `${parti} — ${m.fornitore}` : parti;
+            return `<div class="day-entry" style="align-items:center;">
+              <div>${esc(conFornitore)}</div>
+              <div class="row-actions">
+                <button class="icon-btn" id="crea-ordine-mat-${m.id}">→ Crea ordine</button>
+                <button class="icon-btn" id="edit-mat-${m.id}">Modifica</button>
+                <button class="icon-btn" id="del-mat-${m.id}">Elimina</button>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>`}
+      </div>
+    </details>
+  `;
+  ripristinaScrollOrizzontale(scrollPrecedente);
+  document.getElementById('add-ordine').onclick = () => openOrdineModal();
+  document.getElementById('add-materiale').onclick = () => openMaterialeModal();
+  document.getElementById('manda-ordine-btn').onclick = () => apriMandaOrdine();
+  const dettOrdCompletati = document.getElementById('dettaglio-ordini-completati');
+  if(dettOrdCompletati) dettOrdCompletati.addEventListener('toggle', function(){ uiDettagliAperti['ordini-completati'] = this.open; });
+  const dettMateriali = document.getElementById('dettaglio-materiali');
+  if(dettMateriali) dettMateriali.addEventListener('toggle', function(){ uiDettagliAperti['materiali'] = this.open; });
+  document.getElementById('filtro-fornitore-materiali').onchange = (e) => { state.materialiFiltroFornitore = e.target.value; renderOrdini(); };
+  state.ordini.forEach(r => {
+    const rowEl = document.getElementById('row-ord-'+r.id);
+    const e = document.getElementById('edit-ord-'+r.id), d = document.getElementById('del-ord-'+r.id);
+    const completoBtn = document.getElementById('completo-ord-'+r.id);
+    const riapriBtn = document.getElementById('riapri-ord-'+r.id);
+    const fotoBtn = document.getElementById('foto-ord-'+r.id);
+    const vediFotoBtn = document.getElementById('vedi-foto-ord-'+r.id);
+    const copiaMatBtn = document.getElementById('copia-mat-ord-'+r.id);
+    const matOrdBtn = document.getElementById('mat-ord-'+r.id);
+    if(rowEl) rowEl.onclick = () => openOrdineModal(r);
+    if(e) e.onclick = (ev) => { ev.stopPropagation(); openOrdineModal(r); };
+    if(d) d.onclick = (ev) => { ev.stopPropagation(); state.ordini = state.ordini.filter(x=>x.id!==r.id); persist(); renderAll(); };
+    if(completoBtn) completoBtn.onclick = (ev) => { ev.stopPropagation(); r.dataEffettiva = todayISO(); r.statoParziale = 'completo'; persist(); renderOrdini(); };
+    if(riapriBtn) riapriBtn.onclick = (ev) => { ev.stopPropagation(); r.statoParziale = 'in_attesa'; r.dataEffettiva = null; persist(); renderOrdini(); };
+    if(fotoBtn) fotoBtn.onclick = (ev) => { ev.stopPropagation(); scattaFotoBolla(r); };
+    if(vediFotoBtn) vediFotoBtn.onclick = (ev) => { ev.stopPropagation(); window.open(r.fotoUrl, '_blank'); };
+    if(copiaMatBtn) copiaMatBtn.onclick = (ev) => { ev.stopPropagation(); copiaTesto(testoMaterialiOrdine(r)); };
+    if(matOrdBtn) matOrdBtn.onclick = (ev) => { ev.stopPropagation(); apriGestioneMaterialiOrdine(r); };
+  });
+  state.materialiDaOrdinare.forEach(m => {
+    const editBtn = document.getElementById('edit-mat-'+m.id);
+    const delBtn = document.getElementById('del-mat-'+m.id);
+    const creaOrdineBtn = document.getElementById('crea-ordine-mat-'+m.id);
+    if(editBtn) editBtn.onclick = () => openMaterialeModal(m);
+    if(delBtn) delBtn.onclick = () => { state.materialiDaOrdinare = state.materialiDaOrdinare.filter(x=>x.id!==m.id); persist(); renderOrdini(); };
+    if(creaOrdineBtn) creaOrdineBtn.onclick = () => {
+      const nomeSuggerito = [m.numero, m.descrizione, m.misura].filter(Boolean).join(' — ');
+      openOrdineModal(null, {dataOrdine: todayISO(), statoParziale:'in_attesa', nome: nomeSuggerito, fornitore: m.fornitore || ''});
+    };
+  });
+}
+function openMaterialeModal(existing, prefill){
+  openModal({
+    title: existing ? 'Modifica materiale' : 'Nuovo materiale da ordinare',
+    values: existing || prefill || {},
+    fields: [
+      {name:'fornitore', label:'Fornitore (opzionale)', type:'text'},
+      {name:'numero', label:'Numero / quantità (opzionale)', type:'text'},
+      {name:'descrizione', label:'Descrizione', type:'text', required:true},
+      {name:'misura', label:'Misura (opzionale)', type:'text'},
+    ],
+    pulsanteExtra: existing ? null : {
+      label: '+ Aggiungi altro',
+      onClick: (data) => {
+        state.materialiDaOrdinare.push({id:uid(), ...data});
+        persist();
+        renderOrdini();
+        mostraToastSalvato();
+        openMaterialeModal(null, {fornitore: data.fornitore});
+      }
+    },
+    onSubmit: (data) => {
+      if(existing){ Object.assign(existing, data); }
+      else { state.materialiDaOrdinare.push({id:uid(), ...data}); }
+      persist();
+      renderOrdini();
+    }
+  });
+}
+function testoMaterialiOrdine(ordine){
+  return (ordine.materiali||[]).map(m => [m.numero, m.descrizione, m.misura].filter(Boolean).join(' — ')).join('\n');
+}
+function apriGestioneMaterialiOrdine(ordine){
+  const overlay = document.getElementById('overlay');
+  const modal = document.getElementById('modal');
+  modal.style.maxWidth = '520px';
+
+  function disegna(){
+    ordine.materiali = ordine.materiali || [];
+    modal.innerHTML = `
+      <h3>Materiali — ${esc(ordine.nome)}</h3>
+      ${ordine.fornitore ? `<p style="font-size:12px;color:var(--muted);margin:-8px 0 14px;">Fornitore: ${esc(ordine.fornitore)}</p>` : ''}
+      ${ordine.materiali.length===0 ? `<div style="color:var(--muted);font-size:13px;padding:10px 0;">Nessun materiale in questo ordine.</div>` : `
+      <div style="max-height:240px;overflow-y:auto;border:1px solid var(--line);margin-bottom:14px;">
+        ${ordine.materiali.map((m,i) => `
+          <div class="day-entry" style="align-items:center;">
+            <div>${esc([m.numero, m.descrizione, m.misura].filter(Boolean).join(' — '))}</div>
+            <button class="icon-btn" data-rimuovi-mat-ordine="${i}">Elimina</button>
+          </div>
+        `).join('')}
+      </div>`}
+      <div class="subsection-title" style="margin-top:6px;">Aggiungi materiale dimenticato</div>
+      <div class="field-row">
+        <div class="field"><label>Numero</label><input type="text" id="nuovo-mat-numero"></div>
+        <div class="field" style="flex:2;"><label>Descrizione</label><input type="text" id="nuovo-mat-descrizione"></div>
+        <div class="field"><label>Misura</label><input type="text" id="nuovo-mat-misura"></div>
+      </div>
+      <button type="button" class="btn ghost" id="aggiungi-mat-ordine-btn" style="width:100%;">+ Aggiungi all'ordine</button>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="chiudi-mat-ordine">Chiudi</button>
+      </div>
+    `;
+    document.getElementById('chiudi-mat-ordine').onclick = closeModal;
+    modal.querySelectorAll('[data-rimuovi-mat-ordine]').forEach(btn => {
+      btn.onclick = () => {
+        ordine.materiali.splice(Number(btn.dataset.rimuoviMatOrdine), 1);
+        persist();
+        disegna();
+        renderOrdini();
+      };
+    });
+    document.getElementById('aggiungi-mat-ordine-btn').onclick = () => {
+      const descrizione = document.getElementById('nuovo-mat-descrizione').value.trim();
+      if(!descrizione){ alert('Inserisci almeno una descrizione.'); return; }
+      const numero = document.getElementById('nuovo-mat-numero').value.trim();
+      const misura = document.getElementById('nuovo-mat-misura').value.trim();
+      ordine.materiali.push({numero, descrizione, misura});
+      persist();
+      mostraToast('Aggiunto ✓');
+      disegna();
+      renderOrdini();
+    };
+  }
+  disegna();
+  overlay.classList.add('open');
+}
+function apriMandaOrdine(){
+  const overlay = document.getElementById('overlay');
+  const modal = document.getElementById('modal');
+  modal.style.maxWidth = '560px';
+  let fornitoreScelto = state.materialiFiltroFornitore || '';
+
+  function disegna(){
+    const fornitori = [...new Set(state.materialiDaOrdinare.map(m => (m.fornitore||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+    const candidati = state.materialiDaOrdinare
+      .filter(m => !fornitoreScelto || (m.fornitore||'').trim() === fornitoreScelto)
+      .sort((a,b) => {
+        const cd = (a.descrizione||'').localeCompare(b.descrizione||'');
+        if(cd !== 0) return cd;
+        return (a.misura||'').localeCompare(b.misura||'');
+      });
+    modal.innerHTML = `
+      <h3>Manda ordine</h3>
+      <p style="font-size:12px;color:var(--muted);margin:-8px 0 14px;">Scegli il fornitore, seleziona le voci da includere ed evadile in un unico ordine.</p>
+      <div class="field">
+        <label>Fornitore</label>
+        <select id="manda-ordine-fornitore">
+          <option value="">Tutti / senza fornitore</option>
+          ${fornitori.map(f => `<option value="${esc(f)}" ${fornitoreScelto===f?'selected':''}>${esc(f)}</option>`).join('')}
+        </select>
+      </div>
+      ${candidati.length===0 ? `<div style="color:var(--muted);font-size:13px;padding:14px 0;">Nessun materiale disponibile per questo fornitore.</div>` : `
+      <div style="max-height:260px;overflow-y:auto;border:1px solid var(--line);margin:10px 0;">
+        ${candidati.map(m => {
+          const testo = [m.numero, m.descrizione, m.misura].filter(Boolean).join(' — ');
+          return `<label style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-bottom:1px solid var(--line);cursor:pointer;">
+            <input type="checkbox" class="manda-ordine-check" value="${m.id}" checked style="width:18px;height:18px;flex-shrink:0;">
+            <span style="font-size:13px;">${esc(testo)}</span>
+          </label>`;
+        }).join('')}
+      </div>
+      <div class="field">
+        <label>Nome ordine</label>
+        <input type="text" id="manda-ordine-nome" value="Materiali${fornitoreScelto ? ' — ' + fornitoreScelto : ''}">
+      </div>
+      `}
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" id="manda-ordine-annulla">Annulla</button>
+        ${candidati.length>0 ? `<button type="button" class="btn" id="manda-ordine-evadi">Evadi selezionati → crea ordine</button>` : ''}
+      </div>
+    `;
+    document.getElementById('manda-ordine-annulla').onclick = closeModal;
+    document.getElementById('manda-ordine-fornitore').onchange = (e) => { fornitoreScelto = e.target.value; disegna(); };
+    const evadiBtn = document.getElementById('manda-ordine-evadi');
+    if(evadiBtn){
+      evadiBtn.onclick = () => {
+        const selezionati = Array.from(modal.querySelectorAll('.manda-ordine-check:checked')).map(cb => cb.value);
+        if(selezionati.length === 0){ alert('Seleziona almeno un materiale.'); return; }
+        const nomeOrdine = document.getElementById('manda-ordine-nome').value.trim() || 'Materiali';
+        const materialiOrdine = state.materialiDaOrdinare
+          .filter(m => selezionati.includes(m.id))
+          .map(m => ({numero:m.numero||'', descrizione:m.descrizione||'', misura:m.misura||''}));
+        state.ordini.push({
+          id: uid(),
+          nome: nomeOrdine,
+          fornitore: fornitoreScelto || '',
+          dataOrdine: todayISO(),
+          statoParziale: 'in_attesa',
+          materiali: materialiOrdine,
+        });
+        state.materialiDaOrdinare = state.materialiDaOrdinare.filter(m => !selezionati.includes(m.id));
+        persist();
+        closeModal();
+        renderOrdini();
+        mostraToast('Ordine creato ✓');
+      };
+    }
+  }
+  disegna();
+  overlay.classList.add('open');
+}
+function renderOrdineRow(r){
+  const today = todayISO();
+  const inRitardo = r.dataPrevista && r.dataPrevista < today && r.statoParziale !== 'completo';
+  const statoLabel = STATO_ORDINE.find(s=>s.value===r.statoParziale)?.label || '—';
+  const statoBadgeClass = r.statoParziale==='completo' ? 'badge-green' : r.statoParziale==='parziale' ? 'badge-orange' : 'badge-gray';
+  const completo = r.statoParziale === 'completo';
+  return `<tr ${completo?'style="opacity:0.6;"':''} class="riga-cliccabile" id="row-ord-${r.id}">
+    <td><strong>${esc(r.nome)}</strong>${r.fornitore?`<div style="font-size:11px;color:var(--muted);">${esc(r.fornitore)}</div>`:''}${r.materiali && r.materiali.length ? `<div style="margin-top:4px;font-size:11px;color:var(--muted);white-space:pre-line;">${esc(testoMaterialiOrdine(r))}</div>` : ''}</td>
+    <td class="mono">${fmtDate(r.dataOrdine)}</td>
+    <td class="mono">${fmtDate(r.dataPrevista)}</td>
+    <td class="mono">${fmtDate(r.dataEffettiva)}</td>
+    <td><span class="badge ${statoBadgeClass}">${statoLabel}${r.statoParziale==='parziale' && r.percentualeRicevuta ? ` (${r.percentualeRicevuta}%)` : ''}</span>${inRitardo?`<br><span class="badge badge-red" style="margin-top:4px;">in ritardo</span>`:''}</td>
+    <td style="max-width:180px;font-size:12px;color:var(--muted);">${esc(r.commenti||'—')}</td>
+    <td><div class="row-actions">
+      ${completo ? `<button class="icon-btn" id="riapri-ord-${r.id}">Riapri</button>` : `<button class="icon-btn" id="completo-ord-${r.id}">✓ Completo</button>`}
+      <button class="icon-btn" ${r.fotoUrl ? `id="vedi-foto-ord-${r.id}"` : `id="foto-ord-${r.id}"`}>${r.fotoUrl ? '🖼 Vedi foto' : '📷 Foto'}</button>
+      <button class="icon-btn" id="mat-ord-${r.id}">📦 Materiali${r.materiali && r.materiali.length ? ' ('+r.materiali.length+')' : ''}</button>
+      ${r.materiali && r.materiali.length ? `<button class="icon-btn" id="copia-mat-ord-${r.id}">📋 Copia materiali</button>` : ''}
+      <button class="icon-btn" id="edit-ord-${r.id}">Modifica</button><button class="icon-btn" id="del-ord-${r.id}">Elimina</button>
+    </div></td>
+  </tr>`;
+}
+async function scattaFotoBolla(r){
+  const file = await apriFotocamera();
+  if(!file) return;
+  caricamentiFotoInCorso++;
+  aggiornaIndicatoreCaricamentoFoto();
+  try{
+    const base64 = await ridimensionaImmagine(file);
+    const risposta = await chiamaAzionePost('uploadFotoBolla', {
+      cantiere: state.nomeCantiereAttivo || 'Cantiere',
+      ordine: r.nome,
+      imageBase64: base64,
+      mimeType: 'image/jpeg',
+      vecchioFileId: r.fotoFileId || null,
+    });
+    r.fotoUrl = risposta.fileUrl;
+    r.fotoFileId = risposta.fileId;
+    persist();
+    if(state.section === 'ordini') renderOrdini();
+    mostraToast('📷 Foto caricata ✓');
+  }catch(e){
+    alert('Errore nel caricamento della foto: ' + e.message);
+  }finally{
+    caricamentiFotoInCorso--;
+    aggiornaIndicatoreCaricamentoFoto();
+  }
+}
+function openOrdineModal(existing, prefill){
+  openModal({
+    title: existing ? 'Modifica ordine' : 'Nuovo ordine',
+    values: existing || prefill || {dataOrdine: todayISO(), statoParziale:'in_attesa'},
+    fields: [
+      {name:'nome', label:'Descrizione ordine', type:'text', required:true},
+      {name:'fornitore', label:'Fornitore', type:'text'},
+      {name:'dataOrdine', label:'Data ordine', type:'date', required:true},
+      {name:'dataPrevista', label:'Data prevista consegna', type:'date'},
+      {name:'dataEffettiva', label:'Data effettiva consegna', type:'date'},
+      {name:'statoParziale', label:'Stato consegna', type:'select', options: STATO_ORDINE},
+      {name:'percentualeRicevuta', label:'% ricevuta (se parziale)', type:'number', step:'1'},
+      {name:'commenti', label:'Commenti', type:'textarea'},
+    ],
+    pulsanteExtra: existing ? {
+      label: `📦 Materiali${existing.materiali && existing.materiali.length ? ' ('+existing.materiali.length+')' : ''}`,
+      onClick: () => { apriGestioneMaterialiOrdine(existing); }
+    } : null,
+    onSubmit: (data) => {
+      if(existing){ Object.assign(existing, data); }
+      else { state.ordini.push({id:uid(), ...data}); }
+      persist(); renderAll();
+    }
+  });
+}
+
+/* ============ PERSONE ============ */
+function startOfWeek(d){
+  const dt = new Date(d);
+  const day = (dt.getDay()+6)%7; // lunedì = 0
+  dt.setDate(dt.getDate()-day);
+  dt.setHours(0,0,0,0);
+  return dt;
+}
+function meseKey(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
+function logDelMese(p, d){
+  const key = meseKey(d);
+  return (p.log||[]).filter(l => (l.data||'').slice(0,7) === key);
+}
+function oreTotaliPersonaMese(p, d){
+  return logDelMese(p, d).reduce((s,l) => s + Number(l.ore||0), 0);
+}
+function motivazioneMediaPersonaMese(p, d){
+  const voci = logDelMese(p, d).filter(l => l.motivazione);
+  if(voci.length === 0) return null;
+  const media = voci.reduce((s,l) => s + Number(l.motivazione), 0) / voci.length;
+  return media;
+}
+function pallinoMotivazione(valore, dimensione){
+  dimensione = dimensione || 12;
+  if(!valore) return '';
+  const arrotondato = Math.round(valore);
+  const colore = COLORI_MOTIVAZIONE[Math.min(5, Math.max(1, arrotondato))];
+  return `<span title="Motivazione media: ${valore.toFixed(1)}/5" style="display:inline-block;width:${dimensione}px;height:${dimensione}px;border-radius:50%;background:${colore};vertical-align:middle;"></span>`;
+}
+function renderPersone(){
+  const rows = state.persone;
+  const meseCorrente = state.personeMese;
+  const totaleTutti = rows.reduce((s,p) => s + oreTotaliPersonaMese(p, meseCorrente), 0);
+
+  document.getElementById('content').innerHTML = `
+    <div class="toolbar">
+      <div><h2 class="section-title">Persone</h2><p class="section-sub">Anagrafica squadra cantiere e registro ore lavorative.</p></div>
+      <button class="btn" id="add-persona">+ Nuova persona</button>
+    </div>
+
+    <div class="cal-header" style="margin-top:0;">
+      <button class="btn ghost small" id="mese-prev">← Mese precedente</button>
+      <div class="cal-month">${MESI[meseCorrente.getMonth()]} ${meseCorrente.getFullYear()}</div>
+      <button class="btn ghost small" id="mese-next">Mese successivo →</button>
+    </div>
+
+    <div class="subsection-title">Totali ore del mese</div>
+    ${rows.length===0 ? emptyState('Nessuna persona registrata', 'Aggiungi una persona per iniziare a tracciarne le ore.') : `
+    <div class="table-scroll"><table style="margin-bottom:22px;"><thead><tr><th>Persona</th><th>Ore nel mese</th><th>Motivazione media</th><th></th></tr></thead>
+      <tbody>
+        ${rows.map(p => `<tr>
+          <td><strong>${esc(p.nome)}</strong>${p.ruolo?`<div style="font-size:11px;color:var(--muted);">${esc(p.ruolo)}</div>`:''}</td>
+          <td class="mono">${oreTotaliPersonaMese(p, meseCorrente).toFixed(1)} h</td>
+          <td>${pallinoMotivazione(motivazioneMediaPersonaMese(p, meseCorrente), 16)}</td>
+          <td><button class="icon-btn" id="report-mese-${p.id}">Report mensile</button></td>
+        </tr>`).join('')}
+        <tr><td><strong>Totale squadra</strong></td><td class="mono"><strong>${totaleTutti.toFixed(1)} h</strong></td><td></td><td></td></tr>
+      </tbody></table></div>`}
+
+    <div class="subsection-title">Anagrafica e storico completo</div>
+    ${rows.map(p => renderPersonaCard(p)).join('')}
+  `;
+  document.getElementById('add-persona').onclick = () => openPersonaModal();
+  document.getElementById('mese-prev').onclick = () => { state.personeMese = new Date(meseCorrente.getFullYear(), meseCorrente.getMonth()-1, 1); renderPersone(); };
+  document.getElementById('mese-next').onclick = () => { state.personeMese = new Date(meseCorrente.getFullYear(), meseCorrente.getMonth()+1, 1); renderPersone(); };
+  rows.forEach(p => {
+    const editBtn = document.getElementById('edit-pers-'+p.id);
+    const delBtn = document.getElementById('del-pers-'+p.id);
+    const addOreBtn = document.getElementById('add-ore-'+p.id);
+    const reportBtn = document.getElementById('report-mese-'+p.id);
+    if(editBtn) editBtn.onclick = () => openPersonaModal(p);
+    if(delBtn) delBtn.onclick = () => { state.persone = state.persone.filter(x=>x.id!==p.id); persist(); renderAll(); };
+    if(addOreBtn) addOreBtn.onclick = () => openOreModal(p);
+    if(reportBtn) reportBtn.onclick = () => apriReportMensile(p);
+    const dettStoricoOre = document.getElementById('dettaglio-storico-ore-'+p.id);
+    if(dettStoricoOre) dettStoricoOre.addEventListener('toggle', function(){ uiDettagliAperti['storico-ore-'+p.id] = this.open; });
+    document.querySelectorAll(`[id^="riga-storico-${p.id}-"]`).forEach(rigaEl => {
+      rigaEl.onclick = () => {
+        const elDettaglio = document.getElementById(rigaEl.dataset.targetDettaglio);
+        if(elDettaglio) elDettaglio.style.display = (elDettaglio.style.display === 'none') ? '' : 'none';
+      };
+    });
+    (p.log||[]).forEach(l => {
+      const dl = document.getElementById(`del-log-${p.id}-${l.id}`);
+      if(dl) dl.onclick = () => {
+        const voce = risolviVoceOre(l);
+        if(voce) voce.oggetto.costoOre = Math.max(0, (Number(voce.oggetto.costoOre)||0) - Number(l.ore||0));
+        p.log = p.log.filter(x=>x.id!==l.id);
+        persist(); renderAll();
+      };
+    });
+  });
+}
+function pallinoMotivazioneSingola(valore, dimensione){
+  dimensione = dimensione || 12;
+  if(!valore) return '';
+  const colore = COLORI_MOTIVAZIONE[valore];
+  return `<span title="Motivazione: ${valore}/5" style="display:inline-block;width:${dimensione}px;height:${dimensione}px;border-radius:50%;background:${colore};vertical-align:middle;"></span>`;
+}
+function renderPersonaCard(p){
+  const totale = (p.log||[]).reduce((s,l)=>s+Number(l.ore||0),0);
+  const logRows = [...(p.log||[])].sort((a,b)=>b.data.localeCompare(a.data));
+
+  const gruppiPerGiorno = [];
+  const mappaGiorni = {};
+  logRows.forEach(l => {
+    if(!mappaGiorni[l.data]){
+      mappaGiorni[l.data] = {data: l.data, voci: [], totale: 0};
+      gruppiPerGiorno.push(mappaGiorni[l.data]);
+    }
+    mappaGiorni[l.data].voci.push(l);
+    mappaGiorni[l.data].totale += Number(l.ore||0);
+  });
+
+  return `<div class="card" style="cursor:default;margin-bottom:14px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
+      <div>
+        <div style="font-family:'Oswald',sans-serif;font-size:17px;">${esc(p.nome)}</div>
+        <div style="font-size:12px;color:var(--muted);">${esc(p.ruolo||'—')}</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="mono" style="font-size:20px;">${totale.toFixed(1)} h</div>
+        <div style="font-size:11px;color:var(--muted);">totale registrato (tutti i mesi)</div>
+      </div>
+      <div class="row-actions">
+        <button class="icon-btn" id="add-ore-${p.id}">+ Ore</button>
+        <button class="icon-btn" id="edit-pers-${p.id}">Modifica</button>
+        <button class="icon-btn" id="del-pers-${p.id}">Elimina</button>
+      </div>
+    </div>
+    ${logRows.length ? `<details id="dettaglio-storico-ore-${p.id}" style="margin-top:12px;" ${uiDettagliAperti['storico-ore-'+p.id]?'open':''}>
+      <summary style="cursor:pointer;font-family:'Oswald',sans-serif;letter-spacing:0.04em;padding:8px 0;color:var(--muted);font-size:12px;">Storico ore giorno per giorno (${logRows.length}) — clicca per mostrare/nascondere</summary>
+      <div class="table-scroll" style="margin-top:8px;"><table><thead><tr><th>Data</th><th>Ore</th><th>Lavorazione</th><th>Motiv.</th><th>Note</th><th></th></tr></thead>
+      <tbody>${gruppiPerGiorno.map(g => renderRigaStoricoGiorno(p, g)).join('')}</tbody></table></div>
+    </details>` : ''}
+  </div>`;
+}
+function renderRigaStoricoGiorno(p, g){
+  if(g.voci.length === 1){
+    const l = g.voci[0];
+    const voce = risolviVoceOre(l);
+    return `<tr><td class="mono">${fmtDate(l.data)}</td><td class="mono">${l.ore}</td><td style="font-size:12px;">${voce ? esc(voce.nome) + (voce.tipo==='attivita'?' <span class="badge badge-gray">attività</span>':'') : '—'}</td><td>${pallinoMotivazioneSingola(l.motivazione)}</td><td style="color:var(--muted);font-size:12px;">${esc(l.note||'—')}</td><td><button class="icon-btn" id="del-log-${p.id}-${l.id}">Elimina</button></td></tr>`;
+  }
+  const idDettaglio = `storico-dettaglio-${p.id}-${g.data}`;
+  const nomiVoci = [...new Set(g.voci.map(v => {
+    const voce = risolviVoceOre(v);
+    return voce ? voce.nome : null;
+  }).filter(Boolean))];
+  const etichettaVoci = nomiVoci.length ? nomiVoci.join(', ') : `${g.voci.length} voci`;
+  return `<tr class="riga-cliccabile" id="riga-storico-${p.id}-${g.data}" data-target-dettaglio="${idDettaglio}">
+      <td class="mono">${fmtDate(g.data)}</td>
+      <td class="mono">${g.totale}</td>
+      <td style="font-size:12px;" colspan="4">${esc(etichettaVoci)} <span style="color:var(--muted);font-size:11px;">— ${g.voci.length} voci, clicca per il dettaglio</span></td>
+    </tr>
+    <tr id="${idDettaglio}" style="display:none;">
+      <td colspan="6" style="padding:0;background:var(--paper);">
+        <table style="width:100%;margin:0;"><tbody>
+          ${g.voci.map(v => {
+            const voce = risolviVoceOre(v);
+            return `<tr>
+              <td class="mono" style="padding-left:24px;width:70px;">${v.ore} h</td>
+              <td style="font-size:12px;">${voce ? esc(voce.nome) + (voce.tipo==='attivita'?' <span class="badge badge-gray">attività</span>':'') : 'Generale'}</td>
+              <td>${pallinoMotivazioneSingola(v.motivazione)}</td>
+              <td style="color:var(--muted);font-size:12px;">${esc(v.note||'—')}</td>
+              <td><button class="icon-btn" id="del-log-${p.id}-${v.id}">Elimina</button></td>
+            </tr>`;
+          }).join('')}
+        </tbody></table>
+      </td>
+    </tr>`;
+}
+function apriReportMensile(persona, meseOverride){
+  const overlay = document.getElementById('overlay');
+  const modal = document.getElementById('modal');
+  modal.style.maxWidth = '620px';
+  let mese = meseOverride || state.personeMese;
+
+  function disegna(){
+    const giorni = logDelMese(persona, mese).sort((a,b)=>a.data.localeCompare(b.data));
+    const totale = giorni.reduce((s,l)=>s+Number(l.ore||0),0);
+    modal.innerHTML = `
+      <div class="cal-header" style="margin-bottom:6px;">
+        <button type="button" class="btn ghost small" id="report-mese-prev">←</button>
+        <div style="text-align:center;">
+          <div style="font-family:'Oswald',sans-serif;font-size:20px;">${esc(persona.nome)}</div>
+          <div style="font-size:12px;color:var(--muted);">${esc(persona.ruolo||'')}</div>
+        </div>
+        <button type="button" class="btn ghost small" id="report-mese-next">→</button>
+      </div>
+      <div style="text-align:center;font-family:'Oswald',sans-serif;font-size:16px;letter-spacing:0.04em;margin-bottom:14px;text-transform:uppercase;">${MESI[mese.getMonth()]} ${mese.getFullYear()}</div>
+      ${giorni.length===0 ? `<div style="text-align:center;color:var(--muted);padding:20px 0;">Nessuna ora registrata in questo mese.</div>` : `
+      <table>
+        <thead><tr><th>Giorno</th><th>Ore</th><th>Note</th></tr></thead>
+        <tbody>${giorni.map(l => `<tr><td class="mono">${fmtDate(l.data)}</td><td class="mono">${l.ore}</td><td style="color:var(--muted);font-size:12px;">${esc(l.note||'—')}</td></tr>`).join('')}</tbody>
+      </table>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:14px;border-top:2px solid var(--ink);">
+        <strong style="font-family:'Oswald',sans-serif;letter-spacing:0.04em;">TOTALE ORE MESE</strong>
+        <strong class="mono" style="font-size:24px;color:var(--orange);">${totale.toFixed(1)} h</strong>
+      </div>`}
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" id="chiudi-report">Chiudi</button>
+        <button type="button" class="btn" id="scarica-report-pdf">📄 Scarica PDF</button>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:10px;">Il PDF elenca ore e lavorazioni, pronto da inviare in ditta per la verifica.</div>
+    `;
+    document.getElementById('chiudi-report').onclick = closeModal;
+    document.getElementById('report-mese-prev').onclick = () => { mese = new Date(mese.getFullYear(), mese.getMonth()-1, 1); disegna(); };
+    document.getElementById('report-mese-next').onclick = () => { mese = new Date(mese.getFullYear(), mese.getMonth()+1, 1); disegna(); };
+    document.getElementById('scarica-report-pdf').onclick = () => generaPdfOrePersona(persona, mese);
+  }
+  disegna();
+  overlay.classList.add('open');
+}
+async function generaPdfOrePersona(persona, mese){
+  mostraCaricamento(true);
+  try{
+    await assicuraLibreriePdf();
+    const { jsPDF } = window.jspdf;
+
+    const giorni = logDelMese(persona, mese).sort((a,b)=>a.data.localeCompare(b.data));
+    const totale = giorni.reduce((s,l)=>s+Number(l.ore||0),0);
+    const nomeMese = `${MESI[mese.getMonth()]} ${mese.getFullYear()}`;
+
+    const doc = new jsPDF({orientation:'portrait', unit:'mm', format:'a4'});
+    const margineSx = 14;
+    const larghezzaPagina = doc.internal.pageSize.getWidth();
+    let y = 16;
+
+    doc.setFont('helvetica','bold'); doc.setFontSize(15);
+    doc.text(`Riepilogo ore — ${persona.nome}${persona.ruolo ? ' (' + persona.ruolo + ')' : ''}`, margineSx, y);
+    y += 6;
+    doc.setFont('helvetica','normal'); doc.setFontSize(9);
+    doc.setTextColor(120);
+    doc.text(`Generato il ${fmtDate(todayISO())}   ·   Cantiere: ${state.nomeCantiereAttivo || 'Cantiere'}   ·   Mese: ${nomeMese}`, margineSx, y);
+    doc.setTextColor(0);
+    y += 7;
+
+    const gruppiPerGiorno = {};
+    giorni.forEach(l => {
+      if(!gruppiPerGiorno[l.data]) gruppiPerGiorno[l.data] = {data:l.data, ore:0, voci:[], note:[]};
+      const g = gruppiPerGiorno[l.data];
+      g.ore += Number(l.ore||0);
+      const voce = risolviVoceOre(l);
+      if(voce && !g.voci.includes(voce.nome)) g.voci.push(voce.nome);
+      if(l.note) g.note.push(l.note);
+    });
+    const righeGiorni = Object.values(gruppiPerGiorno).sort((a,b)=>a.data.localeCompare(b.data));
+
+    const corpo = righeGiorni.map(g => [
+      fmtDate(g.data),
+      String(g.ore),
+      g.voci.length ? g.voci.join(', ') : '-',
+      g.note.join('; '),
+    ]);
+
+    doc.autoTable({
+      startY: y,
+      head: [['Data', 'Ore', 'Lavorazione / Attività', 'Note']],
+      body: corpo.length ? corpo : [['Nessuna ora registrata questo mese', '', '', '']],
+      styles:{fontSize:9, cellPadding:1.8},
+      headStyles:{fillColor:[22,35,46], textColor:255},
+      columnStyles:{1:{halign:'center'}},
+      margin:{left:margineSx, right:margineSx},
+    });
+
+    const yFinale = doc.lastAutoTable.finalY + 8;
+    doc.setFont('helvetica','bold'); doc.setFontSize(12);
+    doc.text(`Totale ore mese: ${totale.toFixed(1)} h`, margineSx, yFinale);
+
+    doc.setProperties({ title: `Ore ${persona.nome} - ${nomeMese}` });
+    const urlAnteprima = doc.output('bloburl');
+    window.open(urlAnteprima, '_blank');
+    mostraToast('PDF pronto ✓');
+  }catch(e){
+    alert('Errore nella generazione del PDF: ' + e.message);
+  }
+  mostraCaricamento(false);
+}
+function openPersonaModal(existing){
+  openModal({
+    title: existing ? 'Modifica persona' : 'Nuova persona',
+    values: existing || {},
+    fields: [
+      {name:'nome', label:'Nome', type:'text', required:true},
+      {name:'ruolo', label:'Ruolo / mansione', type:'text'},
+    ],
+    onSubmit: (data) => {
+      if(existing){ Object.assign(existing, data); }
+      else { state.persone.push({id:uid(), log:[], ...data}); }
+      persist(); renderAll();
+    }
+  });
+}
+function risolviVoceOre(logEntry){
+  // Compatibilità con le vecchie voci che usavano solo "lavorazioneId"
+  const chiave = logEntry.vociOreId || (logEntry.lavorazioneId ? ('lav:' + logEntry.lavorazioneId) : '');
+  if(!chiave) return null;
+  const [tipo, id] = chiave.split(':');
+  if(tipo === 'lav'){
+    const lav = state.lavorazioni.find(l => l.id === id);
+    return lav ? {tipo:'lavorazione', oggetto: lav, nome: lav.nome} : null;
+  }
+  if(tipo === 'att'){
+    const att = state.attivitaOre.find(a => a.id === id);
+    return att ? {tipo:'attivita', oggetto: att, nome: att.nome} : null;
+  }
+  return null;
+}
+function openOreModal(persona){
+  const lavorazioniAperte = state.lavorazioni.filter(l => !l.dataCompletamento);
+  openModal({
+    title: `Registra ore — ${persona.nome}`,
+    values: {data: todayISO()},
+    fields: [
+      {name:'data', label:'Data', type:'date', required:true},
+      {name:'ore', label:'Ore lavorate', type:'number', step:'0.5', required:true},
+      {name:'vociOreId', label:'Lavorazione / Attività (opzionale)', type:'select', options: [
+        {value:'', label:'— Nessuna / generale —'},
+        {value:'__nuova_lav__', label:'+ Nuova lavorazione…'},
+        {value:'__nuova_att__', label:'+ Nuova attività non produttiva…'},
+        ...lavorazioniAperte.map(l => ({value:'lav:'+l.id, label:'🔧 '+l.nome})),
+        ...state.attivitaOre.map(a => ({value:'att:'+a.id, label:'🧹 '+a.nome})),
+      ]},
+      {name:'motivazione', label:'MOTIVAZIONE / RENDIMENTO (opzionale)', type:'dots'},
+      {name:'note', label:'Note', type:'text'},
+    ],
+    onSubmit: (data) => {
+      persona.log = persona.log || [];
+      persona.log.push({id:uid(), ...data});
+      if(data.vociOreId){
+        const [tipo, id] = data.vociOreId.split(':');
+        if(tipo === 'lav'){
+          const lav = state.lavorazioni.find(l => l.id === id);
+          if(lav) lav.costoOre = (Number(lav.costoOre)||0) + Number(data.ore||0);
+        } else if(tipo === 'att'){
+          const att = state.attivitaOre.find(a => a.id === id);
+          if(att) att.costoOre = (Number(att.costoOre)||0) + Number(data.ore||0);
+        }
+      }
+      persist(); renderAll();
+    }
+  });
+  const selectVoce = document.getElementById('f-vociOreId');
+  if(selectVoce){
+    selectVoce.onchange = () => {
+      if(selectVoce.value === '__nuova_lav__'){
+        const nome = prompt('Nome della nuova lavorazione:');
+        if(!nome || !nome.trim()){ selectVoce.value = ''; return; }
+        const nuova = {id:uid(), nome:nome.trim(), statoAvanzamento:0, previsioneAvanzamento:0};
+        state.lavorazioni.push(nuova);
+        persist();
+        mostraToast('Lavorazione creata ✓');
+        const opzione = document.createElement('option');
+        opzione.value = 'lav:'+nuova.id;
+        opzione.textContent = '🔧 '+nuova.nome;
+        const ancora = selectVoce.querySelector('option[value="__nuova_att__"]');
+        selectVoce.insertBefore(opzione, ancora ? ancora.nextSibling : null);
+        selectVoce.value = 'lav:'+nuova.id;
+      } else if(selectVoce.value === '__nuova_att__'){
+        const nome = prompt('Nome della nuova attività (es. Pulizie, Trasporti, Magazzino, Riunioni):');
+        if(!nome || !nome.trim()){ selectVoce.value = ''; return; }
+        const nuova = {id:uid(), nome:nome.trim(), costoOre:0};
+        state.attivitaOre.push(nuova);
+        persist();
+        mostraToast('Attività creata ✓');
+        const opzione = document.createElement('option');
+        opzione.value = 'att:'+nuova.id;
+        opzione.textContent = '🧹 '+nuova.nome;
+        selectVoce.appendChild(opzione);
+        selectVoce.value = 'att:'+nuova.id;
+      }
+    };
+  }
+}
+
+/* ============ EVENTI ============ */
+const TIPI_EVENTO = [
+  {value:'positivo', label:'Positivo'},
+  {value:'negativo', label:'Negativo'},
+  {value:'neutro', label:'Neutro'},
+];
+const IMPATTI = [
+  {value:'basso', label:'Basso'},
+  {value:'medio', label:'Medio'},
+  {value:'alto', label:'Alto'},
+];
+function renderEventi(){
+  const rows = [...state.eventi].sort((a,b)=>b.data.localeCompare(a.data));
+  document.getElementById('content').innerHTML = `
+    <div class="toolbar">
+      <div><h2 class="section-title">Eventi</h2><p class="section-sub">Registro di eventi positivi, negativi e neutri accaduti in cantiere.</p></div>
+      <button class="btn" id="add-evento">+ Nuovo evento</button>
+    </div>
+    ${rows.length===0 ? emptyState('Nessun evento registrato', 'Registra un evento per tenere traccia dell\'andamento del cantiere.') : `
+    <div class="table-scroll"><table><thead><tr><th>Data</th><th>Tipo</th><th>Titolo</th><th>Descrizione</th><th>Impatto</th><th></th></tr></thead>
+    <tbody>${rows.map(r => renderEventoRow(r)).join('')}</tbody></table></div>`}
+  `;
+  document.getElementById('add-evento').onclick = () => openEventoModal();
+  rows.forEach(r => {
+    const e = document.getElementById('edit-ev-'+r.id), d = document.getElementById('del-ev-'+r.id);
+    if(e) e.onclick = () => openEventoModal(r);
+    if(d) d.onclick = () => { state.eventi = state.eventi.filter(x=>x.id!==r.id); persist(); renderAll(); };
+  });
+}
+function renderEventoRow(r){
+  const badgeClass = r.tipo==='positivo'?'badge-green':r.tipo==='negativo'?'badge-red':'badge-gray';
+  const label = TIPI_EVENTO.find(t=>t.value===r.tipo)?.label||r.tipo;
+  return `<tr>
+    <td class="mono">${fmtDate(r.data)}</td>
+    <td><span class="badge ${badgeClass}">${label}</span></td>
+    <td><strong>${esc(r.titolo)}</strong></td>
+    <td style="max-width:260px;font-size:12px;color:var(--muted);">${esc(r.descrizione||'—')}</td>
+    <td>${r.impatto ? `<span class="badge badge-blue">${esc(IMPATTI.find(i=>i.value===r.impatto)?.label||r.impatto)}</span>` : '—'}</td>
+    <td><div class="row-actions"><button class="icon-btn" id="edit-ev-${r.id}">Modifica</button><button class="icon-btn" id="del-ev-${r.id}">Elimina</button></div></td>
+  </tr>`;
+}
+function openEventoModal(existing){
+  openModal({
+    title: existing ? 'Modifica evento' : 'Nuovo evento',
+    values: existing || {data: todayISO(), tipo:'positivo', impatto:'medio'},
+    fields: [
+      {name:'tipo', label:'Tipo', type:'select', options: TIPI_EVENTO},
+      {name:'titolo', label:'Titolo', type:'text', required:true},
+      {name:'descrizione', label:'Descrizione', type:'textarea'},
+      {name:'data', label:'Data', type:'date', required:true},
+      {name:'impatto', label:'Impatto', type:'select', options: IMPATTI},
+    ],
+    onSubmit: (data) => {
+      if(existing){ Object.assign(existing, data); }
+      else { state.eventi.push({id:uid(), ...data}); }
+      persist(); renderAll();
+    }
+  });
+}
+
+/* ============ DIARIO DI CANTIERE ============ */
+function corrispondeRicercaDiario(voce, testoRicerca){
+  if(!testoRicerca) return true;
+  const q = testoRicerca.toLowerCase();
+  const campi = [fmtDate(voce.data), voce.attivita||'', voce.commenti||''].join(' ').toLowerCase();
+  return campi.includes(q);
+}
+function renderDiario(){
+  const voci = [...state.diario]
+    .filter(v => corrispondeRicercaDiario(v, state.diarioRicerca))
+    .sort((a,b) => (b.data||'').localeCompare(a.data||''));
+  document.getElementById('content').innerHTML = `
+    <div class="toolbar">
+      <div><h2 class="section-title">Diario di cantiere</h2><p class="section-sub">Cosa è stato fatto giorno per giorno, con eventuali commenti. Tutto lo storico resta qui, sempre visibile e ricercabile.</p></div>
+      <button class="btn" id="add-diario">+ Nuova voce</button>
+    </div>
+    <div class="toolbar" style="gap:8px;">
+      <input type="text" id="cerca-diario" placeholder="Cerca per data, attività o commento…" value="${esc(state.diarioRicerca)}" style="flex:1;padding:9px 10px;border:1px solid var(--line);background:var(--paper);font-family:'Inter',sans-serif;font-size:13px;color:var(--ink);">
+    </div>
+    ${voci.length===0 ? emptyState(state.diarioRicerca ? 'Nessun risultato' : 'Nessuna voce nel diario', state.diarioRicerca ? 'Prova a cercare con altre parole.' : 'Aggiungi la prima voce di oggi: cosa si è fatto in cantiere.') : voci.map(v => renderVoceDiario(v)).join('')}
+  `;
+  document.getElementById('add-diario').onclick = () => openDiarioModal();
+  const inputRicerca = document.getElementById('cerca-diario');
+  inputRicerca.oninput = () => { state.diarioRicerca = inputRicerca.value; renderDiario(); document.getElementById('cerca-diario').focus(); document.getElementById('cerca-diario').setSelectionRange(state.diarioRicerca.length, state.diarioRicerca.length); };
+  voci.forEach(v => {
+    const editBtn = document.getElementById('edit-diario-'+v.id);
+    const delBtn = document.getElementById('del-diario-'+v.id);
+    if(editBtn) editBtn.onclick = () => openDiarioModal(v);
+    if(delBtn) delBtn.onclick = () => { state.diario = state.diario.filter(x=>x.id!==v.id); persist(); renderDiario(); };
+  });
+}
+function renderVoceDiario(v){
+  return `<div class="card" style="cursor:default;margin-bottom:12px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+      <div style="font-family:'Oswald',sans-serif;font-size:16px;">${fmtDate(v.data)}</div>
+      <div class="row-actions">
+        <button class="icon-btn" id="edit-diario-${v.id}">Modifica</button>
+        <button class="icon-btn" id="del-diario-${v.id}">Elimina</button>
+      </div>
+    </div>
+    <div style="margin-top:8px;white-space:pre-wrap;font-size:13px;">${esc(v.attivita||'')}</div>
+    ${v.commenti ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;white-space:pre-wrap;">${esc(v.commenti)}</div>` : ''}
+  </div>`;
+}
+function openDiarioModal(existing){
+  openModal({
+    title: existing ? 'Modifica voce diario' : 'Nuova voce diario',
+    values: existing || {data: todayISO()},
+    fields: [
+      {name:'data', label:'Data', type:'date', required:true},
+      {name:'attivita', label:'Cosa si è fatto oggi', type:'textarea', required:true},
+      {name:'commenti', label:'Commenti (opzionale)', type:'textarea'},
+    ],
+    onSubmit: (data) => {
+      if(existing){ Object.assign(existing, data); }
+      else { state.diario.push({id:uid(), ...data}); }
+      persist();
+      renderDiario();
+    }
+  });
+}
+
+/* ============ RISCHI ============ */
+const CATEGORIE_RISCHIO = [
+  {value:'economico', label:'Economico'},
+  {value:'temporale', label:'Temporale'},
+  {value:'immagine', label:'Immagine/reputazione'},
+  {value:'sicurezza', label:'Sicurezza'},
+  {value:'qualita', label:'Qualità'},
+  {value:'fornitori', label:'Fornitori/materiali'},
+  {value:'altro', label:'Altro'},
+];
+const LIVELLI_PROBABILITA_IMPATTO = [
+  {value:'bassa', label:'Bassa'},
+  {value:'media', label:'Media'},
+  {value:'alta', label:'Alta'},
+];
+const STATI_RISCHIO = [
+  {value:'previsto', label:'Previsto'},
+  {value:'sotto_controllo', label:'Sotto controllo'},
+  {value:'accaduto', label:'Accaduto'},
+  {value:'chiuso', label:'Chiuso'},
+];
+function valoreLivello(v){ return {bassa:1, media:2, alta:3}[v] || 1; }
+function calcolaRischio(r){
+  const probabilita = valoreLivello(r.probabilita);
+  const impattoPeggiore = Math.max(valoreLivello(r.impattoEconomico), valoreLivello(r.impattoTemporale), valoreLivello(r.impattoImmagine));
+  const punteggio = probabilita * impattoPeggiore;
+  let livello, colore;
+  if(punteggio <= 2){ livello = 'Basso'; colore = 'green'; }
+  else if(punteggio <= 4){ livello = 'Medio'; colore = 'orange'; }
+  else { livello = 'Alto'; colore = 'red'; }
+  return { punteggio, livello, colore };
+}
+function renderRischi(){
+  const categorie = CATEGORIE_RISCHIO;
+  const aperti = state.rischi.filter(r => r.stato !== 'accaduto' && r.stato !== 'chiuso');
+  const chiusi = state.rischi.filter(r => r.stato === 'accaduto' || r.stato === 'chiuso');
+  const filtrati = aperti
+    .filter(r => !state.rischiFiltroStato || r.stato === state.rischiFiltroStato)
+    .filter(r => !state.rischiFiltroCategoria || r.categoria === state.rischiFiltroCategoria)
+    .sort((a,b) => calcolaRischio(b).punteggio - calcolaRischio(a).punteggio);
+  const chiusiFiltrati = chiusi
+    .filter(r => !state.rischiFiltroCategoria || r.categoria === state.rischiFiltroCategoria)
+    .sort((a,b) => (b.dataAccaduto||b.dataPrevista||'').localeCompare(a.dataAccaduto||a.dataPrevista||''));
+
+  document.getElementById('content').innerHTML = `
+    <div class="toolbar">
+      <div><h2 class="section-title">Rischi</h2><p class="section-sub">Previsione, impatto, prevenzione e risposta — sia per rischi futuri che per quelli già accaduti.</p></div>
+      <button class="btn" id="add-rischio">+ Nuovo rischio</button>
+    </div>
+    <div class="toolbar" style="gap:8px;flex-wrap:wrap;">
+      <select id="filtro-stato-rischi" style="padding:9px 10px;border:1px solid var(--line);background:var(--paper);font-family:'Inter',sans-serif;font-size:13px;color:var(--ink);">
+        <option value="">Tutti gli stati aperti</option>
+        ${STATI_RISCHIO.filter(s=>s.value==='previsto'||s.value==='sotto_controllo').map(s => `<option value="${s.value}" ${state.rischiFiltroStato===s.value?'selected':''}>${s.label}</option>`).join('')}
+      </select>
+      <select id="filtro-categoria-rischi" style="padding:9px 10px;border:1px solid var(--line);background:var(--paper);font-family:'Inter',sans-serif;font-size:13px;color:var(--ink);">
+        <option value="">Tutte le categorie</option>
+        ${categorie.map(c => `<option value="${c.value}" ${state.rischiFiltroCategoria===c.value?'selected':''}>${c.label}</option>`).join('')}
+      </select>
+    </div>
+    ${filtrati.length===0 ? emptyState('Nessun rischio attivo', 'Aggiungi un rischio previsto o da tenere sotto controllo.') : filtrati.map(r => renderRischioCard(r)).join('')}
+
+    ${chiusiFiltrati.length>0 ? `
+    <details id="dettaglio-rischi-chiusi" style="margin-top:20px;" ${uiDettagliAperti['rischi-chiusi']?'open':''}>
+      <summary style="cursor:pointer;font-family:'Oswald',sans-serif;letter-spacing:0.04em;padding:10px 0;color:var(--muted);font-size:13px;">Rischi accaduti / chiusi (${chiusiFiltrati.length}) — clicca per mostrare/nascondere</summary>
+      <div style="margin-top:8px;">${chiusiFiltrati.map(r => renderRischioCard(r)).join('')}</div>
+    </details>` : ''}
+  `;
+  document.getElementById('add-rischio').onclick = () => openRischioModal();
+  document.getElementById('filtro-stato-rischi').onchange = (e) => { state.rischiFiltroStato = e.target.value; renderRischi(); };
+  document.getElementById('filtro-categoria-rischi').onchange = (e) => { state.rischiFiltroCategoria = e.target.value; renderRischi(); };
+  const dettChiusi = document.getElementById('dettaglio-rischi-chiusi');
+  if(dettChiusi) dettChiusi.addEventListener('toggle', function(){ uiDettagliAperti['rischi-chiusi'] = this.open; });
+
+  state.rischi.forEach(r => {
+    const editBtn = document.getElementById('edit-rischio-'+r.id);
+    const delBtn = document.getElementById('del-rischio-'+r.id);
+    const fotoBtn = document.getElementById('foto-rischio-'+r.id);
+    const vediFotoBtn = document.getElementById('vedi-foto-rischio-'+r.id);
+    if(editBtn) editBtn.onclick = () => openRischioModal(r);
+    if(delBtn) delBtn.onclick = () => { state.rischi = state.rischi.filter(x=>x.id!==r.id); persist(); renderRischi(); };
+    if(fotoBtn) fotoBtn.onclick = () => scattaFotoRischio(r);
+    if(vediFotoBtn) vediFotoBtn.onclick = () => window.open(r.cartellaFotoUrl, '_blank');
+  });
+}
+function renderRischioCard(r){
+  const { livello, colore } = calcolaRischio(r);
+  const categoria = CATEGORIE_RISCHIO.find(c => c.value === r.categoria);
+  const stato = STATI_RISCHIO.find(s => s.value === r.stato);
+  const chiuso = r.stato === 'accaduto' || r.stato === 'chiuso';
+  return `<div class="card" style="cursor:default;margin-bottom:12px;${chiuso?'opacity:0.7;':''}">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:var(--${colore});flex-shrink:0;" title="Rischio ${livello}"></span>
+        <div>
+          <div style="font-family:'Oswald',sans-serif;font-size:16px;">${esc(r.titolo)}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;">
+            ${categoria?esc(categoria.label):''} · Rischio <strong style="color:var(--${colore});">${livello}</strong>
+            · Prob. ${LIVELLI_PROBABILITA_IMPATTO.find(l=>l.value===r.probabilita)?.label||'—'}
+          </div>
+        </div>
+      </div>
+      <span class="badge badge-${chiuso?'gray':'blue'}">${stato?esc(stato.label):''}</span>
+    </div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:11px;color:var(--muted);">
+      <span>Impatto economico: <strong style="color:var(--ink);">${LIVELLI_PROBABILITA_IMPATTO.find(l=>l.value===r.impattoEconomico)?.label||'—'}</strong></span>
+      <span>Impatto temporale: <strong style="color:var(--ink);">${LIVELLI_PROBABILITA_IMPATTO.find(l=>l.value===r.impattoTemporale)?.label||'—'}</strong></span>
+      <span>Impatto immagine: <strong style="color:var(--ink);">${LIVELLI_PROBABILITA_IMPATTO.find(l=>l.value===r.impattoImmagine)?.label||'—'}</strong></span>
+    </div>
+    ${r.pianoPrevenzione ? `<div style="margin-top:8px;font-size:12px;"><strong>Prevenzione:</strong> ${esc(r.pianoPrevenzione)}</div>` : ''}
+    ${r.pianoRisposta ? `<div style="margin-top:4px;font-size:12px;"><strong>Risposta se accade:</strong> ${esc(r.pianoRisposta)}</div>` : ''}
+    ${r.dataPrevista ? `<div style="margin-top:4px;font-size:11px;color:var(--muted);">Data prevista: ${fmtDate(r.dataPrevista)}</div>` : ''}
+    ${r.dataAccaduto ? `<div style="margin-top:4px;font-size:11px;color:var(--red);">Accaduto il: ${fmtDate(r.dataAccaduto)}</div>` : ''}
+    ${r.note ? `<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;">${esc(r.note)}</div>` : ''}
+    <div class="row-actions" style="margin-top:10px;">
+      <button class="icon-btn" id="foto-rischio-${r.id}">📷 Foto</button>
+      ${r.numeroFoto>0 ? `<button class="icon-btn" id="vedi-foto-rischio-${r.id}">🖼 Vedi foto (${r.numeroFoto})</button>` : ''}
+      <button class="icon-btn" id="edit-rischio-${r.id}">Modifica</button>
+      <button class="icon-btn" id="del-rischio-${r.id}">Elimina</button>
+    </div>
+  </div>`;
+}
+function openRischioModal(existing){
+  openModal({
+    title: existing ? 'Modifica rischio' : 'Nuovo rischio',
+    values: existing || {probabilita:'media', impattoEconomico:'media', impattoTemporale:'media', impattoImmagine:'media', stato:'previsto'},
+    fields: [
+      {name:'titolo', label:'Titolo / descrizione del rischio', type:'text', required:true},
+      {name:'categoria', label:'Categoria', type:'select', options: CATEGORIE_RISCHIO},
+      {name:'probabilita', label:'Probabilità', type:'select', options: LIVELLI_PROBABILITA_IMPATTO},
+      {name:'impattoEconomico', label:'Impatto economico', type:'select', options: LIVELLI_PROBABILITA_IMPATTO},
+      {name:'impattoTemporale', label:'Impatto temporale', type:'select', options: LIVELLI_PROBABILITA_IMPATTO},
+      {name:'impattoImmagine', label:'Impatto immagine/reputazione', type:'select', options: LIVELLI_PROBABILITA_IMPATTO},
+      {name:'stato', label:'Stato', type:'select', options: STATI_RISCHIO},
+      {name:'dataPrevista', label:'Data prevista (opzionale)', type:'date'},
+      {name:'dataAccaduto', label:'Data accaduto (se già successo)', type:'date'},
+      {name:'pianoPrevenzione', label:'Piano di prevenzione (cosa fare prima)', type:'textarea'},
+      {name:'pianoRisposta', label:'Piano di risposta (cosa fare se accade)', type:'textarea'},
+      {name:'note', label:'Note / lezione imparata', type:'textarea'},
+    ],
+    onSubmit: (data) => {
+      if(existing){ Object.assign(existing, data); }
+      else { state.rischi.push({id:uid(), ...data}); }
+      persist();
+      renderRischi();
+    }
+  });
+}
+async function scattaFotoRischio(r){
+  const file = await apriFotocamera();
+  if(!file) return;
+  caricamentiFotoInCorso++;
+  aggiornaIndicatoreCaricamentoFoto();
+  try{
+    const base64 = await ridimensionaImmagine(file);
+    const risposta = await chiamaAzionePost('uploadFotoRischio', {
+      cantiere: state.nomeCantiereAttivo || 'Cantiere',
+      rischio: r.titolo,
+      imageBase64: base64,
+      mimeType: 'image/jpeg',
+    });
+    r.numeroFoto = (r.numeroFoto || 0) + 1;
+    r.cartellaFotoUrl = risposta.cartellaUrl;
+    persist();
+    if(state.section === 'rischi') renderRischi();
+    mostraToast('📷 Foto caricata ✓');
+  }catch(e){
+    alert('Errore nel caricamento della foto: ' + e.message);
+  }finally{
+    caricamentiFotoInCorso--;
+    aggiornaIndicatoreCaricamentoFoto();
+  }
+}
+
+/* ============ SAL FORNITORI ============ */
+function importoSalVoce(s){
+  // Compatibilita': le vecchie voci salvavano un importo cumulativo in "importoAutorizzato".
+  // Le nuove voci salvano l'importo del singolo mese in "importoSal".
+  return s.importoSal !== undefined ? Number(s.importoSal||0) : Number(s.importoAutorizzato||0);
+}
+function salOrdinatiCronologici(contratto){
+  return [...(contratto.sal||[])].sort((a,b) => (a.data||'').localeCompare(b.data||''));
+}
+function totaleSalRegistrati(contratto){
+  return (contratto.sal||[]).reduce((s,x) => s + importoSalVoce(x), 0);
+}
+function lavorazioniDiContratto(contrattoId){
+  return state.lavorazioni.filter(l => l.contrattoSalId === contrattoId);
+}
+function sommaPrezziPattuitiLavorazioni(contratto){
+  return lavorazioniDiContratto(contratto.id).reduce((s,l) => s + Number(l.prezzoSalPattuito||0), 0);
+}
+function importoAutorizzatoCalcolato(contratto){
+  return lavorazioniDiContratto(contratto.id).reduce((s,l) => s + (Number(l.prezzoSalPattuito||0) * Number(l.statoAvanzamento||0) / 100), 0);
+}
+function prezzoPattuitoEffettivo(contratto){
+  const totaleDaLavorazioni = sommaPrezziPattuitiLavorazioni(contratto);
+  return totaleDaLavorazioni > 0 ? totaleDaLavorazioni : Number(contratto.importoTotale||0);
+}
+function calcolaAvanzamentoContratto(contratto){
+  const totalePattuito = sommaPrezziPattuitiLavorazioni(contratto);
+  if(totalePattuito <= 0) return null;
+  return Math.round(importoAutorizzatoCalcolato(contratto) / totalePattuito * 100);
+}
+function oreRealiContratto(contratto){
+  return lavorazioniDiContratto(contratto.id).reduce((s,l) => s + Number(l.costoOre||0), 0);
+}
+function costoRealeContratto(contratto){
+  return lavorazioniDiContratto(contratto.id).reduce((s,l) => s + Number(l.costoEuro||0), 0);
+}
+function autorizzatoAttualeContratto(contratto){
+  return totaleSalRegistrati(contratto);
+}
+function suggerimentoProssimoSal(contratto){
+  const avanzamentoCalcolato = calcolaAvanzamentoContratto(contratto);
+  if(avanzamentoCalcolato === null) return null;
+  return importoAutorizzatoCalcolato(contratto) - totaleSalRegistrati(contratto);
+}
+function renderSal(){
+  const contratti = [...state.contrattiSal].sort((a,b) => (a.fornitore||'').localeCompare(b.fornitore||''));
+  const totaleContratti = contratti.reduce((s,c) => s + prezzoPattuitoEffettivo(c), 0);
+  const totaleAutorizzato = contratti.reduce((s,c) => s + autorizzatoAttualeContratto(c), 0);
+  const totaleResiduo = totaleContratti - totaleAutorizzato;
+
+  document.getElementById('content').innerHTML = `
+    <div class="toolbar">
+      <div><h2 class="section-title">SAL Fornitori</h2><p class="section-sub">Autorizza i pagamenti ai subappaltatori quando vuoi tu — anche più volte al mese, o in anticipo su parte del lavoro.</p></div>
+      <button class="btn" id="add-contratto-sal">+ Nuovo fornitore/contratto</button>
+    </div>
+    ${contratti.length===0 ? emptyState('Nessun contratto registrato', 'Aggiungi un fornitore/subappaltatore per iniziare a registrare i SAL mensili.') : `
+    <table style="margin-bottom:20px;"><thead><tr><th>Totale contratti</th><th>Totale autorizzato</th><th>Residuo</th></tr></thead>
+      <tbody><tr>
+        <td class="mono">${fmtEuro(totaleContratti)}</td>
+        <td class="mono">${fmtEuro(totaleAutorizzato)}</td>
+        <td class="mono">${fmtEuro(totaleResiduo)}</td>
+      </tr></tbody>
+    </table>
+    ${contratti.map(c => renderContrattoSalCard(c)).join('')}`}
+  `;
+  document.getElementById('add-contratto-sal').onclick = () => openContrattoSalModal();
+  contratti.forEach(c => {
+    const editBtn = document.getElementById('edit-contratto-'+c.id);
+    const delBtn = document.getElementById('del-contratto-'+c.id);
+    const addSalBtn = document.getElementById('add-sal-'+c.id);
+    if(editBtn) editBtn.onclick = () => openContrattoSalModal(c);
+    if(delBtn) delBtn.onclick = () => { if(confirm(`Eliminare il contratto con "${c.fornitore}" e tutto lo storico SAL? L'operazione non è reversibile.`)){ state.contrattiSal = state.contrattiSal.filter(x=>x.id!==c.id); persist(); renderSal(); } };
+    if(addSalBtn) addSalBtn.onclick = () => openSalModal(c);
+    const dett = document.getElementById('dettaglio-sal-'+c.id);
+    if(dett) dett.addEventListener('toggle', function(){ uiDettagliAperti['sal-'+c.id] = this.open; });
+    (c.sal||[]).forEach(s => {
+      const delSalBtn = document.getElementById('del-sal-'+c.id+'-'+s.id);
+      if(delSalBtn) delSalBtn.onclick = () => { c.sal = c.sal.filter(x=>x.id!==s.id); persist(); renderSal(); };
+      const importoBtn = document.getElementById('importo-sal-'+c.id+'-'+s.id);
+      if(importoBtn) importoBtn.onclick = () => apriModificaCampo(s, 'importoSal', `Importo SAL — ${fmtDataBreve(s.data)}`, 'number', {step:'0.01'}, renderSal);
+    });
+    lavorazioniDiContratto(c.id).forEach(l => {
+      const prezzoBtn = document.getElementById('prezzo-sal-lav-'+l.id);
+      if(prezzoBtn) prezzoBtn.onclick = () => apriModificaCampo(l, 'prezzoSalPattuito', `Prezzo pattuito — ${l.nome}`, 'number', {step:'0.01'}, renderSal);
+    });
+  });
+}
+function renderContrattoSalCard(c){
+  const collegate = lavorazioniDiContratto(c.id);
+  const prezzoPattuitoTot = prezzoPattuitoEffettivo(c);
+  const avanzamentoCalcolato = calcolaAvanzamentoContratto(c);
+  const percentualeMostrata = avanzamentoCalcolato !== null ? avanzamentoCalcolato : 0;
+  const autorizzatoMostrato = autorizzatoAttualeContratto(c);
+  const residuo = prezzoPattuitoTot - autorizzatoMostrato;
+  const suggerimento = suggerimentoProssimoSal(c);
+  const salCronologici = salOrdinatiCronologici(c);
+  return `<div class="card" style="cursor:default;margin-bottom:14px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+      <div>
+        <div style="font-family:'Oswald',sans-serif;font-size:17px;">${esc(c.fornitore)}</div>
+        ${c.oggetto ? `<div style="font-size:12px;color:var(--muted);">${esc(c.oggetto)}</div>` : ''}
+      </div>
+      <div class="mono" style="font-size:18px;">${fmtEuro(prezzoPattuitoTot)}</div>
+    </div>
+    <div class="bar-track" style="margin-top:12px;"><div class="bar-fill" style="width:${clamp(percentualeMostrata,0,100)}%;"></div></div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;font-size:12px;">
+      <span>Avanzamento: <strong>${percentualeMostrata}%</strong></span>
+      <span>Autorizzato: <strong>${fmtEuro(autorizzatoMostrato)}</strong></span>
+      <span>Residuo: <strong style="color:${residuo>0?'var(--red)':'var(--green)'};">${fmtEuro(residuo)}</strong></span>
+    </div>
+    ${suggerimento !== null ? `
+    <div style="margin-top:8px;padding:8px 10px;background:var(--orange-dim);border:1px solid var(--orange);font-size:13px;">
+      Fatturabile da autorizzare ora: <strong style="color:var(--orange);font-size:15px;">${fmtEuro(suggerimento)}</strong>
+    </div>` : ''}
+    ${collegate.length>0 ? `
+    <div class="table-scroll" style="margin-top:10px;"><table><thead><tr><th>Lavorazione</th><th>Prezzo pattuito</th><th>Avanzamento</th><th>Autorizza</th></tr></thead>
+      <tbody>${collegate.map(l => `<tr>
+        <td>${esc(l.nome)}</td>
+        <td class="mono valore-cliccabile" id="prezzo-sal-lav-${l.id}">${l.prezzoSalPattuito ? fmtEuro(l.prezzoSalPattuito) : '+ imposta prezzo'}</td>
+        <td class="mono">${l.statoAvanzamento||0}%</td>
+        <td class="mono">${fmtEuro(Number(l.prezzoSalPattuito||0) * Number(l.statoAvanzamento||0) / 100)}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:4px;">ore reali: <strong style="color:var(--ink);">${oreRealiContratto(c)} h</strong> · costo reale: <strong style="color:var(--ink);">${fmtEuro(costoRealeContratto(c))}</strong></div>
+    ` : `<div style="margin-top:8px;font-size:11px;color:var(--muted);">Nessuna lavorazione collegata (collegale dalla scheda "Modifica" di ogni lavorazione).</div>`}
+    <div class="row-actions" style="margin-top:10px;">
+      <button class="icon-btn" id="add-sal-${c.id}">✓ Autorizza SAL</button>
+      <button class="icon-btn" id="edit-contratto-${c.id}">Modifica contratto</button>
+      <button class="icon-btn" id="del-contratto-${c.id}">Elimina</button>
+    </div>
+    ${salCronologici.length>0 ? `
+    <table style="margin-top:12px;"><thead><tr><th>Data</th><th>Autorizzato</th><th>Rimanente</th><th></th></tr></thead>
+      <tbody>${salCronologici.map((s,i) => {
+        const sommaFinoQui = salCronologici.slice(0,i+1).reduce((tot,x) => tot + importoSalVoce(x), 0);
+        const rimanente = prezzoPattuitoTot - sommaFinoQui;
+        return `<tr>
+        <td class="mono">${fmtDataBreve(s.data)}</td>
+        <td class="mono valore-cliccabile" id="importo-sal-${c.id}-${s.id}">${fmtEuro(importoSalVoce(s))}</td>
+        <td class="mono">${fmtEuro(rimanente)}</td>
+        <td><button class="icon-btn" id="del-sal-${c.id}-${s.id}">Elimina</button></td>
+      </tr>`;
+      }).join('')}</tbody></table>
+    ` : ''}
+  </div>`;
+}
+function openContrattoSalModal(existing){
+  openModal({
+    title: existing ? 'Modifica contratto' : 'Nuovo fornitore/contratto',
+    values: existing || {},
+    fields: [
+      {name:'fornitore', label:'Fornitore / subappaltatore', type:'text', required:true},
+      {name:'oggetto', label:'Oggetto del contratto (opzionale)', type:'text'},
+      {name:'importoTotale', label:'Importo totale contratto (€)', type:'number', step:'0.01', required:true},
+    ],
+    onSubmit: (data) => {
+      if(existing){ Object.assign(existing, data); }
+      else { state.contrattiSal.push({id:uid(), sal:[], ...data}); }
+      persist();
+      renderSal();
+    }
+  });
+}
+function openSalModal(contratto){
+  const suggerimento = suggerimentoProssimoSal(contratto);
+  const importoSuggerito = suggerimento !== null ? Math.round(suggerimento) : 0;
+  openModal({
+    title: suggerimento !== null ? `Autorizza SAL — ${contratto.fornitore} · suggerito ${fmtEuro(importoSuggerito)}` : `Autorizza SAL — ${contratto.fornitore}`,
+    values: {data: todayISO(), importoSal: importoSuggerito},
+    fields: [
+      {name:'data', label:'Data di questa autorizzazione', type:'date', required:true},
+      {name:'importoSal', label:'Importo che autorizzi ora (€) — puoi autorizzare più volte, anche in anticipo su una parte del lavoro', type:'number', step:'0.01', required:true},
+      {name:'note', label:'Note', type:'textarea'},
+    ],
+    submitLabel: 'Autorizza',
+    onSubmit: (data) => {
+      contratto.sal = contratto.sal || [];
+      contratto.sal.push({id:uid(), ...data});
+      persist();
+      renderSal();
+    }
+  });
+}
+
+/* ============ CALENDARIO ============ */
+function getEntriesForDate(iso){
+  const entries = [];
+  state.ordini.forEach(o => {
+    if(o.dataOrdine === iso) entries.push({tipo:'ordine', label:`Ordine emesso: ${o.nome}`, ref:{kind:'ordine', id:o.id}});
+    if(o.dataPrevista === iso && !o.dataEffettiva) entries.push({tipo:'ordine', label:`Consegna prevista: ${o.nome}`, ref:{kind:'ordine', id:o.id}});
+    if(o.dataEffettiva === iso) entries.push({tipo:'ordine', label:`Consegna ricevuta${o.statoParziale==='parziale'?' (parziale)':''}: ${o.nome}`, ref:{kind:'ordine', id:o.id}});
+  });
+  state.lavorazioni.forEach(l => {
+    if(l.dataInizio === iso) entries.push({tipo:'lavorazione', label:`Inizio lavorazione: ${l.nome}`, ref:{kind:'lavorazione', id:l.id}});
+    if(l.scadenzaPrevista === iso) entries.push({tipo:'lavorazione', label:`Scadenza lavorazione: ${l.nome}`, ref:{kind:'lavorazione', id:l.id}});
+  });
+  state.eventi.forEach(e => {
+    if(e.data === iso) entries.push({tipo:e.tipo, label:`Evento (${e.tipo}): ${e.titolo}`, ref:{kind:'evento', id:e.id}});
+  });
+  state.calendario.forEach(c => {
+    if(c.data === iso){
+      entries.push({tipo:c.tipo, label:`${c.orario?c.orario+' — ':''}${c.titolo}`, id:c.id, editable:true});
+    } else if(c.ricorrenteSettimanale && c.data < iso){
+      const start = new Date(c.data), cur = new Date(iso);
+      if(start.getDay() === cur.getDay()) entries.push({tipo:c.tipo, label:`${c.orario?c.orario+' — ':''}${c.titolo} (ricorrente)`, id:c.id, editable:true});
+    }
+  });
+  return entries;
+}
+function renderCalendario(){
+  const monthNames = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+  const y = state.calMonth.getFullYear(), m = state.calMonth.getMonth();
+  const firstDay = new Date(y,m,1);
+  const startOffset = (firstDay.getDay()+6)%7; // lunedì=0
+  const daysInMonth = new Date(y,m+1,0).getDate();
+  const gridStart = new Date(y,m,1-startOffset);
+  const todayStr = todayISO();
+
+  let cells = '';
+  for(let i=0;i<42;i++){
+    const d = new Date(gridStart); d.setDate(gridStart.getDate()+i);
+    const iso = toLocalISODate(d);
+    const inMonth = d.getMonth() === m;
+    const entries = getEntriesForDate(iso);
+    const shown = entries.slice(0,3);
+    const restCount = entries.length - shown.length;
+    cells += `<div class="cal-day ${inMonth?'':'other-month'} ${iso===todayStr?'today':''} ${state.selectedDay===iso?'selected':''}" data-day="${iso}">
+      <div class="cal-daynum">${d.getDate()}</div>
+      <div class="cal-entries">${shown.map(e => `<div class="cal-entry-line" style="border-left-color:${tipoColor(e.tipo)}">${esc(truncate(e.label,26))}</div>`).join('')}</div>
+      <div class="cal-dots-mini">${shown.map(e => `<div class="dot" style="background:${tipoColor(e.tipo)}"></div>`).join('')}</div>
+      ${restCount>0 ? `<div class="cal-more">+${restCount} altri</div>` : ''}
+    </div>`;
+    if(i>=daysInMonth+startOffset-1 && d.getMonth()!==m && i%7===6) break;
+  }
+
+  document.getElementById('content').innerHTML = `
+    <div class="toolbar">
+      <div><h2 class="section-title">Calendario</h2><p class="section-sub">Ordini, scadenze lavorazioni, eventi, note e appuntamenti in un'unica vista.</p></div>
+      <button class="btn" id="add-cal-entry">+ Nota / Appuntamento</button>
+    </div>
+    <div class="cal-header">
+      <button class="btn ghost small" id="cal-prev">← Precedente</button>
+      <div class="cal-month">${monthNames[m]} ${y}</div>
+      <button class="btn ghost small" id="cal-next">Successivo →</button>
+    </div>
+    <div class="cal-grid-scroll">
+      <div class="cal-grid">
+        ${['Lun','Mar','Mer','Gio','Ven','Sab','Dom'].map(d=>`<div class="cal-dow">${d}</div>`).join('')}
+        ${cells}
+      </div>
+    </div>
+    <div id="day-detail"></div>
+  `;
+  document.getElementById('cal-prev').onclick = () => { state.calMonth = new Date(y,m-1,1); renderCalendario(); };
+  document.getElementById('cal-next').onclick = () => { state.calMonth = new Date(y,m+1,1); renderCalendario(); };
+  document.getElementById('add-cal-entry').onclick = () => openCalEntryModal();
+  document.querySelectorAll('.cal-day').forEach(el => {
+    el.onclick = () => { state.selectedDay = el.dataset.day; renderCalendario(); renderDayDetail(); };
+  });
+  if(state.selectedDay) renderDayDetail();
+}
+function renderDayDetail(){
+  const iso = state.selectedDay;
+  const entries = getEntriesForDate(iso);
+  const container = document.getElementById('day-detail');
+  if(!container) return;
+  container.innerHTML = `<div class="day-detail">
+    <h4>${fmtDate(iso)}</h4>
+    ${entries.length===0 ? `<div style="color:var(--muted);font-size:13px;">Nessun evento in questa data.</div>` :
+      entries.map(e => `<div class="day-entry">
+        <span><span class="dot" style="background:${tipoColor(e.tipo)};display:inline-block;margin-right:8px;vertical-align:middle;"></span>${esc(e.label)}</span>
+        <div class="row-actions">
+          ${e.ref && e.ref.kind==='lavorazione' ? `<button class="icon-btn" data-open-lav="${e.ref.id}">→ Apri lavorazione</button>` : ''}
+          ${e.ref && e.ref.kind==='ordine' ? `<button class="icon-btn" data-open-ord="${e.ref.id}">→ Apri ordine</button>` : ''}
+          ${e.ref && e.ref.kind==='evento' ? `<button class="icon-btn" data-open-evt="${e.ref.id}">→ Apri evento</button>` : ''}
+          ${e.editable?`<button class="icon-btn" data-cal-edit="${e.id}">Modifica</button><button class="icon-btn" data-cal-del="${e.id}">Elimina</button>`:''}
+        </div>
+      </div>`).join('')}
+    <div style="margin-top:10px;"><button class="btn small" id="quick-add-cal">+ Aggiungi per questo giorno</button></div>
+  </div>`;
+  const quickAdd = document.getElementById('quick-add-cal');
+  if(quickAdd) quickAdd.onclick = () => openCalEntryModal(null, iso);
+  container.querySelectorAll('[data-cal-del]').forEach(btn => {
+    btn.onclick = () => {
+      state.calendario = state.calendario.filter(c => c.id !== btn.dataset.calDel);
+      persist(); renderCalendario();
+    };
+  });
+  container.querySelectorAll('[data-cal-edit]').forEach(btn => {
+    btn.onclick = () => {
+      const item = state.calendario.find(c => c.id === btn.dataset.calEdit);
+      if(item) openCalEntryModal(item);
+    };
+  });
+  container.querySelectorAll('[data-open-lav]').forEach(btn => {
+    btn.onclick = () => {
+      const item = state.lavorazioni.find(x => x.id === btn.dataset.openLav);
+      state.section = 'lavorazioni'; renderAll();
+      if(item) openLavorazioneModal(item);
+    };
+  });
+  container.querySelectorAll('[data-open-ord]').forEach(btn => {
+    btn.onclick = () => {
+      const item = state.ordini.find(x => x.id === btn.dataset.openOrd);
+      state.section = 'ordini'; renderAll();
+      if(item) openOrdineModal(item);
+    };
+  });
+  container.querySelectorAll('[data-open-evt]').forEach(btn => {
+    btn.onclick = () => {
+      const item = state.eventi.find(x => x.id === btn.dataset.openEvt);
+      state.section = 'eventi'; renderAll();
+      if(item) openEventoModal(item);
+    };
+  });
+}
+function openCalEntryModal(existing, presetDate){
+  openModal({
+    title: existing ? 'Modifica voce calendario' : 'Nuova nota / appuntamento',
+    values: existing || {data: presetDate || todayISO(), tipo:'nota'},
+    fields: [
+      {name:'tipo', label:'Tipo', type:'select', options:[{value:'nota',label:'Nota'},{value:'appuntamento',label:'Appuntamento'}]},
+      {name:'titolo', label:'Titolo', type:'text', required:true},
+      {name:'descrizione', label:'Descrizione', type:'textarea'},
+      {name:'data', label:'Data', type:'date', required:true},
+      {name:'orario', label:'Orario (opzionale)', type:'time'},
+      {name:'ricorrenteSettimanale', label:'Ripeti ogni settimana', type:'checkbox'},
+    ],
+    onSubmit: (data) => {
+      if(existing){ Object.assign(existing, data); }
+      else { state.calendario.push({id:uid(), ...data}); }
+      persist(); renderCalendario();
+    }
+  });
+}
+
+/* ============ SHARED ============ */
+function emptyState(title, sub){
+  return `<div class="empty-state"><div class="display">${esc(title)}</div><div>${esc(sub)}</div></div>`;
+}
+
+/* ============ RENDER DISPATCH ============ */
+function renderAll(){
+  renderNav();
+  if(state.section==='dashboard') renderDashboard();
+  else if(state.section==='lavorazioni') renderLavorazioni();
+  else if(state.section==='ordini') renderOrdini();
+  else if(state.section==='persone') renderPersone();
+  else if(state.section==='eventi') renderEventi();
+  else if(state.section==='calendario') renderCalendario();
+  else if(state.section==='diario') renderDiario();
+  else if(state.section==='rischi') renderRischi();
+  else if(state.section==='sal') renderSal();
+}
+
+/* ============ CONFIGURAZIONE CONNESSIONE GOOGLE SHEETS ============ */
+function apriImpostazioniConnessione(){
+  openModal({
+    title: 'Connessione Google Sheets',
+    values: {url: getUrlAppsScript()},
+    fields: [
+      {name:'url', label:'URL Web App Apps Script (finisce con /exec)', type:'text', required:true},
+    ],
+    submitLabel: 'Salva e verifica',
+    onSubmit: async (data) => {
+      const url = data.url.trim();
+      mostraCaricamento(true);
+      try{
+        await testaConnessioneAppsScript(url);
+        setUrlAppsScript(url);
+        alert('Connessione riuscita. L\'app userà questo Google Sheet.');
+        location.reload();
+      }catch(e){
+        alert('Connessione non riuscita: ' + e.message + '\n\nVerifica di aver copiato l\'URL /exec corretto e che la distribuzione sia impostata su "Chiunque".');
+      }
+      mostraCaricamento(false);
+    }
+  });
+}
+
+function mostraSchermataConfigurazione(){
+  document.getElementById('nav').style.display = 'none';
+  const localeLista = lsGet(LS_KEY_LISTA, []);
+  document.getElementById('content').innerHTML = `
+    <div style="max-width:520px;margin:20px auto;">
+      <h2 class="section-title">Collega Google Sheets</h2>
+      <p class="section-sub">Per sincronizzare i dati tra i tuoi dispositivi, incolla qui l'URL della Web App di Apps Script (vedi le istruzioni ricevute in chat). Va fatto una sola volta per ogni dispositivo.</p>
+      <div class="field">
+        <label>URL Web App (finisce con /exec)</label>
+        <input type="text" id="setup-url" placeholder="https://script.google.com/macros/s/…/exec">
+      </div>
+      ${localeLista.length > 0 ? `<p style="font-size:12px;color:var(--muted);">Ho trovato ${localeLista.length} cantiere/i già salvati su questo dispositivo: dopo la connessione ti chiederò se vuoi caricarli su Google Sheets.</p>` : ''}
+      <button class="btn" id="setup-salva" style="width:100%;margin-top:10px;">Verifica e continua</button>
+      <div id="setup-errore" style="color:var(--red);font-size:13px;margin-top:10px;"></div>
+    </div>
+  `;
+  document.getElementById('setup-salva').onclick = async () => {
+    const url = document.getElementById('setup-url').value.trim();
+    const errEl = document.getElementById('setup-errore');
+    errEl.textContent = '';
+    if(!url){ errEl.textContent = 'Inserisci un URL.'; return; }
+    mostraCaricamento(true);
+    try{
+      await testaConnessioneAppsScript(url);
+      setUrlAppsScript(url);
+      if(localeLista.length > 0){
+        const vuoiMigrare = confirm(`Vuoi caricare ora su Google Sheets i ${localeLista.length} cantiere/i già presenti su questo dispositivo?`);
+        if(vuoiMigrare){
+          await salvaListaCantieri(localeLista);
+          for(const c of localeLista){
+            const d = lsGet(dataKeyCantiere(c.id), datiVuoti());
+            await kvSet(dataKeyCantiere(c.id), d);
+          }
+        }
+      }
+      document.getElementById('nav').style.display = '';
+      await avviaApp();
+    }catch(e){
+      errEl.textContent = 'Connessione non riuscita: ' + e.message;
+    }
+    mostraCaricamento(false);
+  };
+}
+
+async function avviaApp(){
+  const listaCache = caricaCacheListaLocale();
+  const attivoIdCache = lsGet(LS_KEY_ATTIVO, null);
+  let dipintoDaCache = false;
+
+  if(listaCache && listaCache.length > 0){
+    const idDaUsare = (attivoIdCache && listaCache.find(c => c.id === attivoIdCache)) ? attivoIdCache : listaCache[0].id;
+    const datiCache = caricaCacheDatiLocale(idDaUsare);
+    if(datiCache){
+      state.cantiereAttivoId = idDaUsare;
+      applicaDatiAStato(datiCache);
+      const meta = listaCache.find(c => c.id === idDaUsare);
+      state.nomeCantiereAttivo = meta ? meta.nome : 'Cantiere';
+      document.getElementById('stamp-nome-cantiere').textContent = state.nomeCantiereAttivo;
+      renderAll();
+      impostaStatoSync('salvataggio', 'Aggiornamento in corso…');
+      dipintoDaCache = true;
+    }
+  }
+
+  if(!dipintoDaCache) mostraCaricamento(true);
+
+  try{
+    let lista = await caricaListaCantieri();
+    if(lista.length === 0){
+      const id = await creaCantiere('Cantiere Principale');
+      lista = await caricaListaCantieri();
+      lsSet(LS_KEY_ATTIVO, id);
+    }
+    salvaCacheListaLocale(lista);
+    let attivoId = lsGet(LS_KEY_ATTIVO, null);
+    if(!attivoId || !lista.find(c => c.id === attivoId)){
+      attivoId = lista[0].id;
+      lsSet(LS_KEY_ATTIVO, attivoId);
+    }
+
+    state.cantiereAttivoId = attivoId;
+    const dati = await caricaDatiCantiere(attivoId);
+    applicaDatiAStato(dati);
+    salvaCacheDatiLocale(attivoId, dati);
+
+    await renderStamp();
+    renderAll();
+    impostaStatoSync('ok');
+  }catch(e){
+    if(dipintoDaCache){
+      // Già mostrati i dati dall'ultima sessione: segnalo solo che l'aggiornamento è fallito, senza bloccare l'uso dell'app.
+      impostaStatoSync('errore', 'Impossibile aggiornare da Google Sheets: ' + e.message + '. Stai vedendo gli ultimi dati salvati su questo dispositivo.');
+    } else {
+      document.getElementById('content').innerHTML = `<div class="empty-state">
+        <div class="display">Impossibile contattare Google Sheets</div>
+        <div>${esc(e.message)}</div>
+        <button class="btn ghost" id="riprova-connessione" style="margin-top:14px;">Riprova</button>
+        <button class="btn" id="cambia-connessione" style="margin-top:14px;margin-left:8px;">Cambia URL</button>
+      </div>`;
+      document.getElementById('riprova-connessione').onclick = avviaApp;
+      document.getElementById('cambia-connessione').onclick = () => { setUrlAppsScript(''); mostraSchermataConfigurazione(); };
+    }
+  }
+  mostraCaricamento(false);
+}
+
+/* ============ INIT ============ */
+function init(){
+  document.getElementById('stamp-date').textContent = fmtDate(todayISO());
+  document.getElementById('btn-cambia-cantiere').onclick = apriGestioneCantieri;
+  document.getElementById('btn-rinomina-cantiere').onclick = apriRinominaCantiere;
+
+  const url = getUrlAppsScript();
+  if(!url){
+    mostraSchermataConfigurazione();
+    return;
+  }
+  avviaApp();
+}
+init();
+</script>
+
+
+</body></html>
